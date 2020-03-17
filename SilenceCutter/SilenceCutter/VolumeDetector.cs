@@ -54,62 +54,75 @@ namespace Detecting
         /// <summary>
         /// detect volume level in audio file
         /// </summary>
-        /// <param name="audioReader">File Reader</param>
-        /// <param name="silenceThreshold">RMS value</param>
-        /// <param name="blockSize">size of each block, to calc RMS</param>
+        /// <param name="audioFileReader">File Reader</param>
+        /// <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
+        /// <param name="blockSamples">block of samples, we calc the averange value of block and compare it with amplitudeSilenceThreshold</param>
         /// <returns>
         /// List of Time duration and Volume level ( Sound or Silence )
         /// </returns>
         public static List<TimeSpanVolume> DetectVolumeLevel(
             this AudioFileReader audioFileReader, 
-            float silenceThreshold, 
-            int blockSize = 500)
+            float amplitudeSilenceThreshold, 
+            int blockSamples = 500)
         {
+            if (amplitudeSilenceThreshold > 1 || amplitudeSilenceThreshold < 0)
+                throw new ArgumentOutOfRangeException($"amplitudeSilenceThreshold ({amplitudeSilenceThreshold}) can't be more than 1 or less than 0");
             List<TimeSpanVolume> TimeSpanVolumes = new List<TimeSpanVolume>();
             
             // safe old position of cursor
             
             long oldPosition = audioFileReader.Position;
 
-            // calc duration of blockSize in milisec
+            // buffer
+
+            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+
+            // end of file
             
-            double MilisecPerBlock = (double)blockSize / audioFileReader.WaveFormat.SampleRate*1000;
-
             bool eof = false;
-            float[] ReadBuffer = new float[audioFileReader.WaveFormat.SampleRate * sizeof(float)];
-            while (!eof)
+
+            // define duration of blockSamples
+
+            double MilisecPerSamples = blockSamples / audioFileReader.WaveFormat.SampleRate * 1000;
+            TimeSpan timeSpan = TimeSpan.FromMilliseconds(MilisecPerSamples);
+
+            while (!eof) 
             {
-                int samplesRead = audioFileReader.Read(ReadBuffer, 0, ReadBuffer.Length);
-                if (samplesRead == 0)
-                {
+                
+                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+
+                if (ReadedSamples == 0)
                     eof = true;
-                    break;
-                }
-                for (int x = 0; x < samplesRead; x += blockSize)
+
+                for (int i = 0; i < ReadedSamples; i += blockSamples) 
                 {
-                    // calc rms 
-
-                    double total = 0.0;
-                    for (int y = 0; y < blockSize && x + y < samplesRead; y++)
+                    float average = 0;
+                    
+                    // i + j < amplitudeArray.Length  -  out of the range
+                    
+                    for (int j = 0; j < blockSamples && i + j < amplitudeArray.Length; j++) 
                     {
-                        total += ReadBuffer[x + y] * ReadBuffer[x + y];
-                    }
-                    var rms = (float)Math.Sqrt(total / blockSize);
-                    
-                    // compare rms with threshold and define it as silence( or sound ) part
+                        // amplitude can be negative
 
-                    bool IsSilence = rms < silenceThreshold ? true : false;
-                    
-                    TimeSpanVolume.VolumeValue volumeValue = IsSilence ?
+                        float sampleLocal = Math.Abs(amplitudeArray[i + j]);
+                        average += sampleLocal;
+                    }
+                    average /= blockSamples;
+
+                    // DETECT Is Silence
+
+                    bool isSilence = average > amplitudeSilenceThreshold ? true : false;
+                    TimeSpanVolume.VolumeValue volume = isSilence ?
                         TimeSpanVolume.VolumeValue.Silence :
                         TimeSpanVolume.VolumeValue.Noise;
 
-                    TimeSpan timeSpan = TimeSpan.FromMilliseconds(MilisecPerBlock);
+                    // convert Samples into milisec
 
-                    TimeSpanVolume timeSpanVolume = new TimeSpanVolume(volumeValue, timeSpan);
-                    TimeSpanVolumes.Add(timeSpanVolume);
+                    TimeSpanVolume span = new TimeSpanVolume(volume, timeSpan);
+                    TimeSpanVolumes.Add(span);
                 }
             }
+            
             audioFileReader.Position = oldPosition;
             TimeSpanVolumes.TrimExcess();
             //TimeSpanVolumes = SqueezeListOfTimeSpans(TimeSpanVolumes);
