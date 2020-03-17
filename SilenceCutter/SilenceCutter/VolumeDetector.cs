@@ -9,7 +9,7 @@ using System.Drawing;
 
 namespace Detecting
 {
-    public struct TimeSpanVolume 
+    public struct TimeSpanVolume
     {
         public enum VolumeValue
         {
@@ -17,90 +17,113 @@ namespace Detecting
         }
         public VolumeValue Volume { get; set; }
         public TimeSpan TimeSpan { get; set; }
-        public TimeSpanVolume(VolumeValue volume, TimeSpan timeSpan) 
+        public TimeSpanVolume(VolumeValue volume, TimeSpan timeSpan)
         {
             TimeSpan = timeSpan;
             Volume = volume;
         }
         public override string ToString()
         {
-            return $"{Volume} {TimeSpan}";
+            return $"{Volume,10} {TimeSpan,10}";
         }
     }
-    public static class VolumeDetector
+
+    public class VolumeDetector
     {
-        private static bool IsSilence(float amplitude, sbyte threshold)
+        public AudioFileReader AudioReader { get; set; }
+        //public List<TimeSpanVolume> DetectedTime { get; private set; }
+
+        public VolumeDetector(AudioFileReader audioReader) 
         {
-            double dB = 20*Math.Log10(Math.Abs(amplitude));
-            return dB < threshold;
+            AudioReader = audioReader;
         }
-        private static List<TimeSpanVolume> SqueezeListOfTimeSpans(List<TimeSpanVolume> timeSpanVolumes) 
+        public VolumeDetector(string filePath) 
         {
-            TimeSpanVolume tmp = new TimeSpanVolume();
+            AudioReader = new AudioFileReader(filePath);
+        }
+        public List<TimeSpanVolume> SqueezeListOfTimeSpans(List<TimeSpanVolume> DetectedTime)
+        {
+            if (DetectedTime.Count < 1)
+                throw new ArgumentException($"Size of list DetectedTime ({DetectedTime.Count}) less than 1");
+
             List<TimeSpanVolume> squeezed = new List<TimeSpanVolume>();
-            for (int i = 0; i < timeSpanVolumes.Count-1; i++) 
+
+            // first elem case
+            TimeSpanVolume tmp = new TimeSpanVolume(DetectedTime[0].Volume, new TimeSpan());
+
+            foreach (var span in DetectedTime)
             {
-                tmp.Volume = timeSpanVolumes[i].Volume;
-                tmp.TimeSpan = tmp.TimeSpan.Add(timeSpanVolumes[i].TimeSpan);
-                if (timeSpanVolumes[i+1].Volume != tmp.Volume) 
+                if (tmp.Volume != span.Volume)
                 {
                     squeezed.Add(tmp);
-                    tmp.TimeSpan = new TimeSpan();
+
+                    // clear tmp and set span
+
+                    tmp = new TimeSpanVolume();
+                    tmp.Volume = span.Volume;
+                    tmp.TimeSpan += span.TimeSpan;
+                }
+                else
+                {
+                    tmp.TimeSpan += span.TimeSpan;
                 }
             }
+            squeezed.Add(tmp);
             squeezed.TrimExcess();
             return squeezed;
         }
+       
         /// <summary>
         /// detect volume level in audio file
         /// </summary>
-        /// <param name="audioFileReader">File Reader</param>
         /// <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
-        /// <param name="blockSamples">block of samples, we calc the averange value of block and compare it with amplitudeSilenceThreshold</param>
+        /// <param name="Millisec">milisec convert into block of samples, then we calc the averange value of block and compare it with amplitudeSilenceThreshold</param>
         /// <returns>
         /// List of Time duration and Volume level ( Sound or Silence )
         /// </returns>
-        public static List<TimeSpanVolume> DetectVolumeLevel(
-            this AudioFileReader audioFileReader, 
-            float amplitudeSilenceThreshold, 
-            int blockSamples = 500)
+        public List<TimeSpanVolume> DetectVolumeLevel(
+            float amplitudeSilenceThreshold,
+            int Millisec = 2)
         {
             if (amplitudeSilenceThreshold > 1 || amplitudeSilenceThreshold < 0)
                 throw new ArgumentOutOfRangeException($"amplitudeSilenceThreshold ({amplitudeSilenceThreshold}) can't be more than 1 or less than 0");
+            
             List<TimeSpanVolume> TimeSpanVolumes = new List<TimeSpanVolume>();
-            
+
             // safe old position of cursor
-            
-            long oldPosition = audioFileReader.Position;
+
+            long oldPosition = AudioReader.Position;
 
             // buffer
 
-            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+            float[] amplitudeArray = new float[AudioReader.WaveFormat.SampleRate * 4];   // TODO delete that
 
             // end of file
-            
+
             bool eof = false;
 
-            // define duration of blockSamples
+            // define blockSamples by millisec
 
-            double MilisecPerSamples = (double)blockSamples / audioFileReader.WaveFormat.SampleRate * 1000;
-            TimeSpan timeSpan = TimeSpan.FromMilliseconds(MilisecPerSamples);
+            TimeSpan timeSpan = TimeSpan.FromMilliseconds(Millisec);
 
-            while (!eof) 
+            // number of Samples we ananlyze for 1 time 
+            int blockSamples = MillisecToSamplesBlock(Millisec);
+
+            while (!eof)
             {
-                
-                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+
+                int ReadedSamples = AudioReader.Read(amplitudeArray, 0, amplitudeArray.Length);
 
                 if (ReadedSamples == 0)
                     eof = true;
 
-                for (int i = 0; i < ReadedSamples; i += blockSamples) 
+                for (int i = 0; i < ReadedSamples; i += blockSamples)
                 {
                     float average = 0;
-                    
+
                     // i + j < amplitudeArray.Length  -  out of the range
-                    
-                    for (int j = 0; j < blockSamples && i + j < amplitudeArray.Length; j++) 
+
+                    for (int j = 0; j < blockSamples && i + j < amplitudeArray.Length; j++)
                     {
                         // amplitude can be negative
 
@@ -116,32 +139,43 @@ namespace Detecting
                         TimeSpanVolume.VolumeValue.Silence :
                         TimeSpanVolume.VolumeValue.Noise;
 
-                    // convert Samples into milisec
+                    // add timespan to list
 
                     TimeSpanVolume span = new TimeSpanVolume(volume, timeSpan);
                     TimeSpanVolumes.Add(span);
-                } 
+                }
             }
-            
-            audioFileReader.Position = oldPosition;
+
+            AudioReader.Position = oldPosition;
             TimeSpanVolumes.TrimExcess();
             //TimeSpanVolumes = SqueezeListOfTimeSpans(TimeSpanVolumes);
             return TimeSpanVolumes;
         }
+
+        public int MillisecToSamplesBlock(int Millisec)
+        {
+            int blockSample = Millisec * AudioReader.WaveFormat.SampleRate / 1000;
+            
+            // sterio have 2 chanals, if we dont multi that, amount time of audio will be 2 times more than origin
+            
+            blockSample *= AudioReader.WaveFormat.Channels;
+            
+            return blockSample;
+        }
+
         /// <summary>
         /// Get max amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
         /// </summary>
-        /// <param name="audioFileReader">object to extend</param>
         /// <returns>Max Amplitude</returns>
-        public static float GetMaxAmplitude(this AudioFileReader audioFileReader) 
+        public float GetMaxAmplitude()
         {
             // safe old position of cursor
 
-            long oldPosition = audioFileReader.Position;
+            long oldPosition = AudioReader.Position;
 
             // buffer
 
-            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+            float[] amplitudeArray = new float[AudioReader.WaveFormat.SampleRate];
 
             // end of file
 
@@ -152,17 +186,17 @@ namespace Detecting
             while (!eof)
             {
 
-                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+                int ReadedSamples = AudioReader.Read(amplitudeArray, 0, amplitudeArray.Length);
 
                 if (ReadedSamples == 0)
                     eof = true;
-                for (int i = 0; i < ReadedSamples; i++) 
+                for (int i = 0; i < ReadedSamples; i++)
                 {
                     max = Math.Max(amplitudeArray[i], max);
                 }
             }
 
-            audioFileReader.Position = oldPosition;
+            AudioReader.Position = oldPosition;
             return max;
         }
 
@@ -170,17 +204,16 @@ namespace Detecting
         /// <summary>
         /// Get max abs amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
         /// </summary>
-        /// <param name="audioFileReader">object to extend</param>
         /// <returns>Max Abs Amplitude</returns>
-        public static float GetMaxAbsAmplitude(this AudioFileReader audioFileReader)
+        public float GetMaxAbsAmplitude()
         {
             // safe old position of cursor
 
-            long oldPosition = audioFileReader.Position;
+            long oldPosition = AudioReader.Position;
 
             // buffer
 
-            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+            float[] amplitudeArray = new float[AudioReader.WaveFormat.SampleRate];
 
             // end of file
 
@@ -191,7 +224,7 @@ namespace Detecting
             while (!eof)
             {
 
-                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+                int ReadedSamples = AudioReader.Read(amplitudeArray, 0, amplitudeArray.Length);
 
                 if (ReadedSamples == 0)
                     eof = true;
@@ -202,24 +235,23 @@ namespace Detecting
                 }
             }
 
-            audioFileReader.Position = oldPosition;
+            AudioReader.Position = oldPosition;
             return max;
         }
-        
+
         /// <summary>
         /// Get min amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
         /// </summary>
-        /// <param name="audioFileReader">object to extend</param>
         /// <returns>Min Amplitude</returns>
-        public static float GetMinAmplitude(this AudioFileReader audioFileReader)
+        public float GetMinAmplitude()
         {
             // safe old position of cursor
 
-            long oldPosition = audioFileReader.Position;
+            long oldPosition = AudioReader.Position;
 
             // buffer
 
-            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+            float[] amplitudeArray = new float[AudioReader.WaveFormat.SampleRate];
 
             // end of file
 
@@ -229,7 +261,7 @@ namespace Detecting
 
             while (!eof)
             {
-                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+                int ReadedSamples = AudioReader.Read(amplitudeArray, 0, amplitudeArray.Length);
 
                 if (ReadedSamples == 0)
                     eof = true;
@@ -239,24 +271,23 @@ namespace Detecting
                 }
             }
 
-            audioFileReader.Position = oldPosition;
+            AudioReader.Position = oldPosition;
             return min;
         }
 
         /// <summary>
         /// Get min abs amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
         /// </summary>
-        /// <param name="audioFileReader">object to extend</param>
         /// <returns>Min Abs Amplitude</returns>
-        public static float GetMinAbsAmplitude(this AudioFileReader audioFileReader)
+        public float GetMinAbsAmplitude()
         {
             // safe old position of cursor
 
-            long oldPosition = audioFileReader.Position;
+            long oldPosition = AudioReader.Position;
 
             // buffer
 
-            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+            float[] amplitudeArray = new float[AudioReader.WaveFormat.SampleRate];
 
             // end of file
 
@@ -266,7 +297,7 @@ namespace Detecting
 
             while (!eof)
             {
-                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+                int ReadedSamples = AudioReader.Read(amplitudeArray, 0, amplitudeArray.Length);
 
                 if (ReadedSamples == 0)
                     eof = true;
@@ -277,8 +308,11 @@ namespace Detecting
                 }
             }
 
-            audioFileReader.Position = oldPosition;
+            AudioReader.Position = oldPosition;
             return min;
         }
+
+
     }
+
 }
