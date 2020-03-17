@@ -128,7 +128,11 @@ namespace Detecting
             //TimeSpanVolumes = SqueezeListOfTimeSpans(TimeSpanVolumes);
             return TimeSpanVolumes;
         }
-
+        /// <summary>
+        /// Get max amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+        /// </summary>
+        /// <param name="audioFileReader">object to extend</param>
+        /// <returns>Max Amplitude</returns>
         public static float GetMaxAmplitude(this AudioFileReader audioFileReader) 
         {
             // safe old position of cursor
@@ -160,6 +164,119 @@ namespace Detecting
 
             audioFileReader.Position = oldPosition;
             return max;
+        }
+
+
+        /// <summary>
+        /// Get max abs amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+        /// </summary>
+        /// <param name="audioFileReader">object to extend</param>
+        /// <returns>Max Abs Amplitude</returns>
+        public static float GetMaxAbsAmplitude(this AudioFileReader audioFileReader)
+        {
+            // safe old position of cursor
+
+            long oldPosition = audioFileReader.Position;
+
+            // buffer
+
+            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+
+            // end of file
+
+            bool eof = false;
+
+            float max = 0;
+
+            while (!eof)
+            {
+
+                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+
+                if (ReadedSamples == 0)
+                    eof = true;
+                for (int i = 0; i < ReadedSamples; i++)
+                {
+                    max = Math.Max(Math.Abs(amplitudeArray[i]), max);
+                }
+            }
+
+            audioFileReader.Position = oldPosition;
+            return max;
+        }
+        
+        /// <summary>
+        /// Get min amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+        /// </summary>
+        /// <param name="audioFileReader">object to extend</param>
+        /// <returns>Min Amplitude</returns>
+        public static float GetMinAmplitude(this AudioFileReader audioFileReader)
+        {
+            // safe old position of cursor
+
+            long oldPosition = audioFileReader.Position;
+
+            // buffer
+
+            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+
+            // end of file
+
+            bool eof = false;
+
+            float min = 0;
+
+            while (!eof)
+            {
+                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+
+                if (ReadedSamples == 0)
+                    eof = true;
+                for (int i = 0; i < ReadedSamples; i++)
+                {
+                    min = Math.Min(amplitudeArray[i], min);
+                }
+            }
+
+            audioFileReader.Position = oldPosition;
+            return min;
+        }
+
+        /// <summary>
+        /// Get min abs amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+        /// </summary>
+        /// <param name="audioFileReader">object to extend</param>
+        /// <returns>Min Abs Amplitude</returns>
+        public static float GetMinAbsAmplitude(this AudioFileReader audioFileReader)
+        {
+            // safe old position of cursor
+
+            long oldPosition = audioFileReader.Position;
+
+            // buffer
+
+            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+
+            // end of file
+
+            bool eof = false;
+
+            float min = 0;
+
+            while (!eof)
+            {
+                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+
+                if (ReadedSamples == 0)
+                    eof = true;
+                for (int i = 0; i < ReadedSamples; i++)
+                {
+                    min = Math.Min(Math.Abs(amplitudeArray[i]), min);
+                }
+            }
+
+            audioFileReader.Position = oldPosition;
+            return min;
         }
     }
 }
