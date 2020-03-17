@@ -197,7 +197,8 @@ namespace Detecting
                     eof = true;
                 for (int i = 0; i < ReadedSamples; i++)
                 {
-                    max = Math.Max(Math.Abs(amplitudeArray[i]), max);
+                    if (Math.Abs(amplitudeArray[i]) > Math.Abs(max))
+                        max = amplitudeArray[i];
                 }
             }
 
@@ -271,7 +272,8 @@ namespace Detecting
                     eof = true;
                 for (int i = 0; i < ReadedSamples; i++)
                 {
-                    min = Math.Min(Math.Abs(amplitudeArray[i]), min);
+                    if (Math.Abs(amplitudeArray[i]) < Math.Abs(min))
+                        min = amplitudeArray[i];
                 }
             }
 
