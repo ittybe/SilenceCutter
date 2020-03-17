@@ -83,7 +83,7 @@ namespace Detecting
 
             // define duration of blockSamples
 
-            double MilisecPerSamples = blockSamples / audioFileReader.WaveFormat.SampleRate * 1000;
+            double MilisecPerSamples = (double)blockSamples / audioFileReader.WaveFormat.SampleRate * 1000;
             TimeSpan timeSpan = TimeSpan.FromMilliseconds(MilisecPerSamples);
 
             while (!eof) 
@@ -111,7 +111,7 @@ namespace Detecting
 
                     // DETECT Is Silence
 
-                    bool isSilence = average > amplitudeSilenceThreshold ? true : false;
+                    bool isSilence = average < amplitudeSilenceThreshold ? true : false;
                     TimeSpanVolume.VolumeValue volume = isSilence ?
                         TimeSpanVolume.VolumeValue.Silence :
                         TimeSpanVolume.VolumeValue.Noise;
@@ -120,13 +120,46 @@ namespace Detecting
 
                     TimeSpanVolume span = new TimeSpanVolume(volume, timeSpan);
                     TimeSpanVolumes.Add(span);
-                }
+                } 
             }
             
             audioFileReader.Position = oldPosition;
             TimeSpanVolumes.TrimExcess();
             //TimeSpanVolumes = SqueezeListOfTimeSpans(TimeSpanVolumes);
             return TimeSpanVolumes;
+        }
+
+        public static float GetMaxAmplitude(this AudioFileReader audioFileReader) 
+        {
+            // safe old position of cursor
+
+            long oldPosition = audioFileReader.Position;
+
+            // buffer
+
+            float[] amplitudeArray = new float[audioFileReader.WaveFormat.SampleRate];
+
+            // end of file
+
+            bool eof = false;
+
+            float max = 0;
+
+            while (!eof)
+            {
+
+                int ReadedSamples = audioFileReader.Read(amplitudeArray, 0, amplitudeArray.Length);
+
+                if (ReadedSamples == 0)
+                    eof = true;
+                for (int i = 0; i < ReadedSamples; i++) 
+                {
+                    max = Math.Max(amplitudeArray[i], max);
+                }
+            }
+
+            audioFileReader.Position = oldPosition;
+            return max;
         }
     }
 }
