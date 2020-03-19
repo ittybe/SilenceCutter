@@ -8,15 +8,16 @@ namespace SilenceCutter
 {
     namespace Detecting
     {
+        public enum VolumeValue
+        {
+            Silence, Noise
+        }
         /// <summary>
         /// struct for VolumeDetector
         /// </summary>
         public struct TimeSpanVolume
         {
-            public enum VolumeValue
-            {
-                Silence, Noise
-            }
+            
             public VolumeValue Volume { get; set; }
             public TimeSpan TimeSpan { get; set; }
             public TimeSpanVolume(VolumeValue volume, TimeSpan timeSpan)
@@ -27,6 +28,44 @@ namespace SilenceCutter
             public override string ToString()
             {
                 return $"{Volume,10} {TimeSpan,10}";
+            }
+        }
+
+        public struct TimeLineVolume
+        {
+            public VolumeValue Volume { get; set; }
+            
+            private TimeSpan start;
+            public TimeSpan Start
+            {
+                get { return start; }
+                set 
+                {
+                    
+                    start = value; 
+                }
+            }
+            public TimeSpan End { get; set; }
+            public TimeSpan Duration 
+            {
+                get 
+                {
+                    return End - Start;
+                }
+            }
+            
+            public TimeLineVolume(VolumeValue volume, TimeSpan _start, TimeSpan _end) 
+            {
+                start = new TimeSpan();
+
+                End = _end;
+                Volume = volume;
+                Start = _start;
+            }
+
+            public override string ToString()
+            {
+                return $"start [{Start}] end [{End}] Volume [{Enum.GetName(typeof(VolumeValue), Volume)}]";
             }
         }
 
@@ -48,40 +87,40 @@ namespace SilenceCutter
             }
 
             /// <summary>
-            /// squeeze list by adding time of time span with same volume
+            /// format list of detected timespans by convert time duration to timelines
             /// </summary>
             /// <param name="DetectedTime">result of DetectVolumeLevel()</param>
             /// <returns> squeezed list </returns>
-            public List<TimeSpanVolume> SqueezeListOfTimeSpans(List<TimeSpanVolume> DetectedTime)
+            public List<TimeLineVolume> FormatDetectedTimeSpans(List<TimeSpanVolume> DetectedTime)
             {
                 if (DetectedTime.Count < 1)
                     throw new ArgumentException($"Size of list DetectedTime ({DetectedTime.Count}) less than 1");
 
-                List<TimeSpanVolume> squeezed = new List<TimeSpanVolume>();
+                List<TimeLineVolume> formatedList = new List<TimeLineVolume>();
 
                 // first elem case
-                TimeSpanVolume tmp = new TimeSpanVolume(DetectedTime[0].Volume, new TimeSpan());
+                TimeLineVolume tmp = new TimeLineVolume(DetectedTime[0].Volume, new TimeSpan(), new TimeSpan());
 
                 foreach (var span in DetectedTime)
                 {
                     if (tmp.Volume != span.Volume)
                     {
-                        squeezed.Add(tmp);
+                        formatedList.Add(tmp);
 
                         // clear tmp and set span
 
-                        tmp = new TimeSpanVolume();
+                        tmp = new TimeLineVolume(span.Volume, tmp.End, tmp.End);
                         tmp.Volume = span.Volume;
-                        tmp.TimeSpan += span.TimeSpan;
+                        tmp.End += span.TimeSpan;
                     }
                     else
                     {
-                        tmp.TimeSpan += span.TimeSpan;
+                        tmp.End += span.TimeSpan;
                     }
                 }
-                squeezed.Add(tmp);
-                squeezed.TrimExcess();
-                return squeezed;
+                formatedList.Add(tmp);
+                formatedList.TrimExcess();
+                return formatedList;
             }
 
             /// <summary>
@@ -105,20 +144,22 @@ namespace SilenceCutter
 
                 long oldPosition = AudioReader.Position;
 
-                // buffer
-
-                float[] amplitudeArray = new float[AudioReader.WaveFormat.SampleRate * 4];   // TODO delete that
-
-                // end of file
-
-                bool eof = false;
-
                 // define blockSamples by millisec
 
                 TimeSpan timeSpan = TimeSpan.FromMilliseconds(Millisec);
 
                 // number of Samples we ananlyze for 1 time 
+
                 int blockSamples = MillisecToSamplesBlock(Millisec);
+
+                //// buffer
+                //int SizeBuffer = blockSamples * (AudioReader.WaveFormat.SampleRate / blockSamples);
+                //AudioReader.WaveFormat.SampleRate * 4
+                float[] amplitudeArray = new float[blockSamples];
+
+                // end of file
+
+                bool eof = false;
 
                 while (!eof)
                 {
@@ -128,33 +169,69 @@ namespace SilenceCutter
                     if (ReadedSamples == 0)
                         eof = true;
 
-                    for (int i = 0; i < ReadedSamples; i += blockSamples)
+                    // Samples that is not divided on blockSamples
+
+                    int residueSamples = ReadedSamples % blockSamples;
+                    ReadedSamples -= residueSamples;
+
+                    // MAIN ANALYZE
+
+                    for (int i = 0; i < ReadedSamples; i += blockSamples) 
                     {
                         float average = 0;
 
-                        // i + j < amplitudeArray.Length  -  out of the range
+                        // one block can be not completed ( size of block not equals blockSamples )
 
+                        int analyzedSamples = 0;
+                        
+                        // i + j < amplitudeArray.Length  -  out of the range
+                        
                         for (int j = 0; j < blockSamples && i + j < amplitudeArray.Length; j++)
                         {
                             // amplitude can be negative
 
                             float sampleLocal = Math.Abs(amplitudeArray[i + j]);
                             average += sampleLocal;
+                            analyzedSamples++;
                         }
-                        average /= blockSamples;
+                        average /= analyzedSamples;
 
                         // DETECT Is Silence
 
-                        bool isSilence = average < amplitudeSilenceThreshold ? true : false;
-                        TimeSpanVolume.VolumeValue volume = isSilence ?
-                            TimeSpanVolume.VolumeValue.Silence :
-                            TimeSpanVolume.VolumeValue.Noise;
+                        bool isSilenceResidue = average < amplitudeSilenceThreshold ? true : false;
+                        VolumeValue volumeResidue = isSilenceResidue ?
+                            VolumeValue.Silence :
+                            VolumeValue.Noise;
 
                         // add timespan to list
 
-                        TimeSpanVolume span = new TimeSpanVolume(volume, timeSpan);
-                        TimeSpanVolumes.Add(span);
+                        TimeSpanVolume spanResidue = new TimeSpanVolume(volumeResidue, timeSpan);
+                        TimeSpanVolumes.Add(spanResidue);
                     }
+
+                    // residue analyze
+
+                    // if residue samples is not 0, that means we need to analyze it separately (last samples is not clear for dividing it on blocks)
+
+                    float averageResidue = 0;
+                    for (int i = ReadedSamples; i < ReadedSamples + residueSamples; i++) 
+                    {
+                        float sampleLocal = Math.Abs(amplitudeArray[i]);
+                        averageResidue += sampleLocal;
+                    }
+                    averageResidue /= residueSamples;
+
+                    // DETECT Is Silence
+
+                    bool isSilence = averageResidue < amplitudeSilenceThreshold ? true : false;
+                    VolumeValue volume = isSilence ?
+                        VolumeValue.Silence :
+                        VolumeValue.Noise;
+
+                    // add timespan to list
+                    TimeSpan ResidueTimeSpan = TimeSpan.FromMilliseconds(SamplesBlockToMillisec(residueSamples));
+                    TimeSpanVolume span = new TimeSpanVolume(volume, ResidueTimeSpan);
+                    TimeSpanVolumes.Add(span);
                 }
 
                 AudioReader.Position = oldPosition;
@@ -173,6 +250,41 @@ namespace SilenceCutter
 
                 return blockSample;
             }
+
+            public int SamplesBlockToMillisec(int SamplesBlock)
+            {
+                int Millisec = SamplesBlock / AudioReader.WaveFormat.SampleRate * 1000;
+
+                // sterio have 2 chanals, if we dont multi that, amount time of audio will be 2 times more than origin
+
+                Millisec /= AudioReader.WaveFormat.Channels;
+
+                return Millisec;
+            }
+            /// <summary>
+            /// you can get recommended millisec value for method DetectVolumeLevel
+            /// (we need recommended millisec because audio file does not have const number of samples (last block of samples can be less than sample rate))
+            /// </summary>
+            /// <param name="LengthOfList">Size of list</param>
+            /// <returns>List of recommended millisec (less than 1 second), sometimes list can be empty, then just use 2 millisec</returns>
+            public List<int> GetListOfRecommendedMillisec(int LengthOfList) 
+            {
+                List<int> recommendedMillisec = new List<int>();
+                long AmountNumOfSamples = AudioReader.Length / sizeof(float);
+                long lastSamplesBlock = AmountNumOfSamples % AudioReader.WaveFormat.SampleRate;
+                int millisec = 1;
+                while (recommendedMillisec.Count < LengthOfList) 
+                {
+                    int sampleBlock = MillisecToSamplesBlock(millisec);
+                    if (lastSamplesBlock % sampleBlock == 0 && AudioReader.WaveFormat.SampleRate % sampleBlock == 0)
+                        recommendedMillisec.Add(millisec);
+                    if (millisec > 1000)
+                        break;
+                    millisec++;
+                }
+                return recommendedMillisec;
+            }
+
 
             /// <summary>
             /// Get max amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
@@ -210,7 +322,6 @@ namespace SilenceCutter
                 AudioReader.Position = oldPosition;
                 return max;
             }
-
 
             /// <summary>
             /// Get max abs amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
