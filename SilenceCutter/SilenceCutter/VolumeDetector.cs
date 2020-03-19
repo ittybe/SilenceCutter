@@ -8,6 +8,9 @@ namespace SilenceCutter
 {
     namespace Detecting
     {
+        /// <summary>
+        /// Volume value like Silence or Noise
+        /// </summary>
         public enum VolumeValue
         {
             Silence, Noise
@@ -31,6 +34,9 @@ namespace SilenceCutter
             }
         }
 
+        /// <summary>
+        /// Time line, have properties start, end, volumeLevel, duration
+        /// </summary>
         public struct TimeLineVolume
         {
             public VolumeValue Volume { get; set; }
@@ -65,7 +71,7 @@ namespace SilenceCutter
 
             public override string ToString()
             {
-                return $"start [{Start}] end [{End}] Volume [{Enum.GetName(typeof(VolumeValue), Volume)}]";
+                return $"start [{Start}] end [{End}] duration [{Duration}] Volume [{Enum.GetName(typeof(VolumeValue), Volume)}]";
             }
         }
 
@@ -74,7 +80,11 @@ namespace SilenceCutter
         /// </summary>
         public class VolumeDetector
         {
+            /// <summary>
+            /// AudioReader fundamental property for this class
+            /// </summary>
             public AudioFileReader AudioReader { get; set; }
+            
             /// <summary>
             /// Buffer's Size in method DetectVolumeLevel()
             /// </summary>
