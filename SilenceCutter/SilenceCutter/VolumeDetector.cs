@@ -75,8 +75,16 @@ namespace SilenceCutter
         public class VolumeDetector
         {
             public AudioFileReader AudioReader { get; set; }
-            //public List<TimeSpanVolume> DetectedTime { get; private set; }
-
+            /// <summary>
+            /// Buffer's Size in method DetectVolumeLevel()
+            /// </summary>
+            public long BufferSize
+            {
+                get 
+                {
+                    return AudioReader.WaveFormat.SampleRate;
+                }
+            }
             public VolumeDetector(AudioFileReader audioReader)
             {
                 AudioReader = audioReader;
@@ -105,7 +113,8 @@ namespace SilenceCutter
                 {
                     if (tmp.Volume != span.Volume)
                     {
-                        formatedList.Add(tmp);
+                        if (tmp.Duration > TimeSpan.FromMilliseconds(0))
+                            formatedList.Add(tmp);
 
                         // clear tmp and set span
 
@@ -118,7 +127,8 @@ namespace SilenceCutter
                         tmp.End += span.TimeSpan;
                     }
                 }
-                formatedList.Add(tmp);
+                if (tmp.Duration > TimeSpan.FromMilliseconds(0))
+                    formatedList.Add(tmp);
                 formatedList.TrimExcess();
                 return formatedList;
             }
@@ -152,10 +162,8 @@ namespace SilenceCutter
 
                 int blockSamples = MillisecToSamplesBlock(Millisec);
 
-                //// buffer
-                //int SizeBuffer = blockSamples * (AudioReader.WaveFormat.SampleRate / blockSamples);
-                //AudioReader.WaveFormat.SampleRate * 4
-                float[] amplitudeArray = new float[blockSamples];
+                // buffer
+                float[] amplitudeArray = new float[BufferSize];
 
                 // end of file
 
@@ -209,7 +217,7 @@ namespace SilenceCutter
                         TimeSpanVolumes.Add(spanResidue);
                     }
 
-                    // residue analyze
+                    // RESIDUE ANALYZE
 
                     // if residue samples is not 0, that means we need to analyze it separately (last samples is not clear for dividing it on blocks)
 
@@ -240,6 +248,11 @@ namespace SilenceCutter
                 return TimeSpanVolumes;
             }
 
+            /// <summary>
+            /// convert millisec to samples
+            /// </summary>
+            /// <param name="Millisec">millisec</param>
+            /// <returns>block of samples</returns>
             public int MillisecToSamplesBlock(int Millisec)
             {
                 int blockSample = Millisec * AudioReader.WaveFormat.SampleRate / 1000;
@@ -251,6 +264,12 @@ namespace SilenceCutter
                 return blockSample;
             }
 
+
+            /// <summary>
+            /// convert samples to millisec
+            /// </summary>
+            /// <param name="SamplesBlock">number of samples</param>
+            /// <returns>millisec</returns>
             public int SamplesBlockToMillisec(int SamplesBlock)
             {
                 int Millisec = SamplesBlock / AudioReader.WaveFormat.SampleRate * 1000;
@@ -261,30 +280,28 @@ namespace SilenceCutter
 
                 return Millisec;
             }
+
             /// <summary>
-            /// you can get recommended millisec value for method DetectVolumeLevel
-            /// (we need recommended millisec because audio file does not have const number of samples (last block of samples can be less than sample rate))
+            /// Get recommended millisec for method DetectVolumeLevel
             /// </summary>
-            /// <param name="LengthOfList">Size of list</param>
-            /// <returns>List of recommended millisec (less than 1 second), sometimes list can be empty, then just use 2 millisec</returns>
-            public List<int> GetListOfRecommendedMillisec(int LengthOfList) 
+            /// <returns>
+            /// millisec (less than 1000) that you should put in "DetectVolumeLevel" method
+            /// </returns>
+            public int GetRecommendedMillisec() 
             {
-                List<int> recommendedMillisec = new List<int>();
                 long AmountNumOfSamples = AudioReader.Length / sizeof(float);
                 long lastSamplesBlock = AmountNumOfSamples % AudioReader.WaveFormat.SampleRate;
-                int millisec = 1;
-                while (recommendedMillisec.Count < LengthOfList) 
+                int millisec = 1000;
+                while (true)
                 {
-                    int sampleBlock = MillisecToSamplesBlock(millisec);
-                    if (lastSamplesBlock % sampleBlock == 0 && AudioReader.WaveFormat.SampleRate % sampleBlock == 0)
-                        recommendedMillisec.Add(millisec);
-                    if (millisec > 1000)
+                    int sampleBlock = MillisecToSamplesBlock(--millisec);
+                    if (millisec == 0)
                         break;
-                    millisec++;
+                    if (lastSamplesBlock % sampleBlock == 0 && BufferSize % sampleBlock == 0)
+                        return millisec;
                 }
-                return recommendedMillisec;
+                return AudioReader.WaveFormat.Channels;
             }
-
 
             /// <summary>
             /// Get max amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
