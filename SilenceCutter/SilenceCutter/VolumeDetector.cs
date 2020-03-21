@@ -13,7 +13,14 @@ namespace SilenceCutter
         /// </summary>
         public enum VolumeValue
         {
-            Silence, Noise
+            /// <summary>
+            /// Silence mark
+            /// </summary>
+            Silence, 
+            /// <summary>
+            /// Noise mark
+            /// </summary>
+            Noise
         }
         /// <summary>
         /// struct for VolumeDetector
@@ -115,10 +122,12 @@ namespace SilenceCutter
             /// </summary>
             /// <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
             /// <param name="Millisec">we split all audio on millisec blocks and detect this block as silence or sound</param>
-            public void DetectVolume(float amplitudeSilenceThreshold, int Millisec = 1000) 
+            /// <param name="millisecExtension">value for extend noise parts</param>
+            public void DetectVolume(float amplitudeSilenceThreshold, int Millisec = 1000, int millisecExtension = 100) 
             {
                 var tmp = DetectVolumeLevel(amplitudeSilenceThreshold, Millisec);
                 FormatDetectedTimeSpans(tmp);
+                ExtendNoise(millisecExtension);
             }
             /// <summary>
             /// Reformating DetectedTime into start-end TimeSpan list
@@ -182,6 +191,95 @@ namespace SilenceCutter
             }
 
             /// <summary>
+            /// extend each noise time span on paticular number
+            /// </summary>
+            /// <param name="millisecExtension">value for extend noise parts</param>
+            private void ExtendNoise(int millisecExtension) 
+            {
+                TimeSpan millisec = TimeSpan.FromMilliseconds(millisecExtension);
+                
+                // save all indexes to delete and then delete those indexes
+
+                List<int> indexesToDelete = new List<int>();
+                
+                // for next one
+                TimeSpan tmpNoiseEnd = DetectedTime[0].End;
+                
+                // for previous one
+                TimeSpan tmpNoiseStart = DetectedTime[0].Start;
+                for (int i = 0; i < DetectedTime.Count; i++)
+                {
+                    if (DetectedTime[i].Volume == VolumeValue.Silence)
+                    {
+                        // got for case if Duration of time span is less than the value
+
+                        TimeSpan localMillisec = millisec;
+                        if (DetectedTime[i].Duration <= millisec)
+                        {
+                            // we just remove time span if duration of it less than value
+
+                            indexesToDelete.Add(i);
+                            localMillisec = DetectedTime[i].Duration;
+                        }
+                        
+                        // end silence span
+                        var silence = DetectedTime[i];
+                        silence.End -= localMillisec;
+
+                        // noise starting is silence ending
+                        tmpNoiseStart = silence.End;
+                        DetectedTime[i] = silence;
+
+                        // it's begining tmp.Start += localMillisec is 00:00:00.100 we miss 100 millisec from begining
+
+                        if (i >= 1) 
+                        {
+                            // start silence span
+                            silence = DetectedTime[i];
+                            silence.Start += localMillisec;
+
+                            // noise Ending is silence starting
+                            tmpNoiseEnd = silence.Start;
+                            DetectedTime[i] = silence;
+                        }
+                        
+                    }
+                    else if (DetectedTime[i].Volume == VolumeValue.Noise) 
+                    {
+                        // ending silence - starting noise
+
+                        var noise = DetectedTime[i];
+                        noise.Start = tmpNoiseStart;
+                        DetectedTime[i] = noise;
+
+                        // it's begining tmp.Start += localMillisec is 00:00:00.100 we miss 100 millisec from begining
+                        // i - 1 = -1
+
+                        if (i > 1) 
+                        {
+                            // i - 2 because this struct of list 
+                            // Silence
+                            // Noise
+                            // Silence
+                            // Noise
+                            // ...  we go thought silence to another Noise
+
+                            // starting silence - ending noise
+                            noise = DetectedTime[i - 2];
+                            noise.End = tmpNoiseEnd;
+                            DetectedTime[i - 2] = noise;
+                        }
+                    }
+                }
+
+                indexesToDelete.Sort();
+                for (int i = indexesToDelete.Count - 1; i >= 0; i--)
+                {
+                    DetectedTime.RemoveAt(i);
+                }
+            }
+
+            /// <summary>
             /// detect volume level in audio file
             /// </summary>
             /// <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
@@ -227,8 +325,8 @@ namespace SilenceCutter
 
                     // Samples that is not divided on blockSamples
 
-                    int residueSamples = ReadedSamples % blockSamples;
-                    ReadedSamples -= residueSamples;
+                    int RemainSamples = ReadedSamples % blockSamples;
+                    ReadedSamples -= RemainSamples;
 
                     // MAIN ANALYZE
 
@@ -254,39 +352,39 @@ namespace SilenceCutter
 
                         // DETECT Is Silence
 
-                        bool isSilenceResidue = average < amplitudeSilenceThreshold ? true : false;
-                        VolumeValue volumeResidue = isSilenceResidue ?
+                        bool isSilenceRemain = average < amplitudeSilenceThreshold ? true : false;
+                        VolumeValue volumeRemain = isSilenceRemain ?
                             VolumeValue.Silence :
                             VolumeValue.Noise;
 
                         // add timespan to list
 
-                        TimeSpanVolume spanResidue = new TimeSpanVolume(volumeResidue, timeSpan);
-                        TimeSpanVolumes.Add(spanResidue);
+                        TimeSpanVolume spanRemain = new TimeSpanVolume(volumeRemain, timeSpan);
+                        TimeSpanVolumes.Add(spanRemain);
                     }
 
-                    // RESIDUE ANALYZE
+                    // Remain ANALYZE
 
-                    // if residue samples is not 0, that means we need to analyze it separately (last samples is not clear for dividing it on blocks)
+                    // if Remain samples is not 0, that means we need to analyze it separately (last samples is not clear for dividing it on blocks)
 
-                    float averageResidue = 0;
-                    for (int i = ReadedSamples; i < ReadedSamples + residueSamples; i++) 
+                    float averageRemain = 0;
+                    for (int i = ReadedSamples; i < ReadedSamples + RemainSamples; i++) 
                     {
                         float sampleLocal = Math.Abs(amplitudeArray[i]);
-                        averageResidue += sampleLocal;
+                        averageRemain += sampleLocal;
                     }
-                    averageResidue /= residueSamples;
+                    averageRemain /= RemainSamples;
 
                     // DETECT Is Silence
 
-                    bool isSilence = averageResidue < amplitudeSilenceThreshold ? true : false;
+                    bool isSilence = averageRemain < amplitudeSilenceThreshold ? true : false;
                     VolumeValue volume = isSilence ?
                         VolumeValue.Silence :
                         VolumeValue.Noise;
 
                     // add timespan to list
-                    TimeSpan ResidueTimeSpan = TimeSpan.FromMilliseconds(SamplesBlockToMillisec(residueSamples));
-                    TimeSpanVolume span = new TimeSpanVolume(volume, ResidueTimeSpan);
+                    TimeSpan RemainTimeSpan = TimeSpan.FromMilliseconds(SamplesBlockToMillisec(RemainSamples));
+                    TimeSpanVolume span = new TimeSpanVolume(volume, RemainTimeSpan);
                     TimeSpanVolumes.Add(span);
                 }
 
@@ -329,6 +427,8 @@ namespace SilenceCutter
                 return Millisec;
             }
 
+            
+            // TODO: delete ?
             /// <summary>
             /// Get recommended millisec for method DetectVolumeLevel
             /// </summary>
