@@ -20,7 +20,7 @@ using Xabe.FFmpeg.Events;
 
 namespace SilenceCutter.VideoManipulating
 {
-    class VideoMerger
+    public class VideoMerger
     {
         /// <summary>
         /// Temp directory for save all splited part
@@ -35,7 +35,7 @@ namespace SilenceCutter.VideoManipulating
         /// 
         /// </summary>
         /// <param name="FilePath">output filepath</param>
-        /// <param name="tempDirName">Temp directory name for save all splited part</param>
+        /// <param name="tempDirName">Temp directory path for save all splited part</param>
         public VideoMerger(string FilePath, string tempDirName = "Temp")
         {
             outputFile = new FileInfo(FilePath);
@@ -43,36 +43,62 @@ namespace SilenceCutter.VideoManipulating
             if (!TempDir.Exists)
                 throw new ArgumentException($"Directory \"{tempDirName}\" doesn't exist!");
         }
+
+
         /// <summary>
         /// split video on part with only silent or noise
         /// </summary>
+        ///<param name="container">contains video part names</param>
         /// <param name="OnProgressHandler">handler for event OnProgress IConvertion's object </param>
         /// <param name="PreferExtension">prefer extension for splited parts of video</param>
-        public async void MergeVideo(ConversionProgressEventHandler OnProgressHandler = null, string PreferExtension = FileExtensions.Mp4)
+        public void MergeVideo(VideoPartsContainer container, ConversionProgressEventHandler OnProgressHandler = null, string PreferExtension = FileExtensions.Mp4)
         {
-            long SplitedPartNumber = 0;
-            var fileList = TempDir.GetFiles();
+            //long SplitedPartNumber = 0;
+            //var fileList = TempDir.GetFiles();
 
-            for (int i = 0; i < fileList.Length; i++)
-            {
-                // find file
-                
-                FileInfo inputFile = Array.Find(fileList, file => file.Name.IndexOf(SplitedPartNumber.ToString()) != -1);
-                SplitedPartNumber++;
-         
-                // detect volume value
+            //for (int i = 0; i < fileList.Length; i++)
+            //{
+            //    // find file
 
-                bool isSilence = inputFile.Name[0].CompareTo('S') == 0 ? true : false;
+            //    FileInfo inputFile = Array.Find(fileList, file => file.Name.IndexOf(SplitedPartNumber.ToString()) != -1);
+            //    SplitedPartNumber++;
 
-                IConversion conversion = Conversion.New()
-                .AddParameter("")
-                .SetOutput(outputFile.FullName);
-                conversion.OnProgress += OnProgressHandler;
+            //    // detect volume value
 
-                _ = await conversion.Start();
-            }
+            //    bool isSilence = inputFile.Name[0].CompareTo('S') == 0 ? true : false;
 
+            //    //IConversion conversion = Conversion.New()
+            //    //    .AddStream(audioStream, videoStream)
+            //    //    .SetOutput(outputPath);
+
+            //    //conversion.OnProgress += OnProgressHandler;
+
+            //    //conversion.Start().Wait();
+            //}
+
+            // create and write to file, that places in temp windows directory, all video part names
             
+            FileInfo videoPartsList = new FileInfo(Path.ChangeExtension(Path.GetTempFileName(), ".txt"));
+            StreamWriter writer = File.CreateText(videoPartsList.FullName);
+            foreach (var videoPart in container.Container) 
+            {
+                string fullpath = $"{container.TempDir.FullName}\\{videoPart}";
+                writer.WriteLine($"file '{fullpath}'");
+            }
+            writer.Flush();
+            writer.Dispose();
+
+            // concate all videopart to one video
+
+            IConversion conversion = Conversion.New()
+                .AddParameter($"-f concat -safe 0 -i \"{videoPartsList.FullName}\" -c copy")
+                .SetOutput(outputFile.FullName);
+            
+            conversion.Start().Wait();
+
+            // delete already useless file
+
+            videoPartsList.Delete();
         }
     }
 }

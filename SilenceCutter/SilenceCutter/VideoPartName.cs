@@ -53,6 +53,12 @@ namespace SilenceCutter.VideoPartNaming
         {
             return FullName;
         }
+
+        //public static extern VideoPartName(string str)
+        //{
+            
+        //}
+
     }
 }
 
