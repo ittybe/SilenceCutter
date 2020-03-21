@@ -24,7 +24,7 @@ namespace SilenceCutter.VideoManipulating
     /// <summary>
     /// split video by volume level
     /// </summary>
-    public class VideoSpliter
+    public class VideoSplitter
     {
         /// <summary>
         /// Temp directory for save all splited part
@@ -46,8 +46,8 @@ namespace SilenceCutter.VideoManipulating
         /// 
         /// </summary>
         /// <param name="media">IMediaInfo object</param>
-        /// <param name="tempDirName">Temp directory path for save all splited part</param>
-        public VideoSpliter(IMediaInfo media, string tempDirName = "Temp")
+        /// <param name="tempDirName">Temp directory name for save all splited part</param>
+        public VideoSplitter(IMediaInfo media, string tempDirName)
         {
             Media = media;
             TempDir = new DirectoryInfo(tempDirName);
@@ -61,13 +61,12 @@ namespace SilenceCutter.VideoManipulating
         /// <param name="DetectedTime">result of method SilenceCutter.Detecting.VolumeDetector.DetectVolumeLevel()</param>
         /// <param name="OnProgressHandler">handler for event OnProgress IConvertion's object </param>
         /// <param name="PreferExtension">prefer extension for splited parts of video</param>
-        public void SplitVideo(List<TimeLineVolume> DetectedTime, ConversionProgressEventHandler OnProgressHandler = null, string PreferExtension = FileExtensions.Mp4)
+        public void SplitVideo(List<TimeLineVolume> DetectedTime, string PreferExtension, ConversionProgressEventHandler OnProgressHandler = null)
         {
             VideoPartsContainer container = VideoPartNamesGenerator.GenerateNames(DetectedTime, TempDir, PreferExtension);
-            ConversionQueue conversionQueue = new ConversionQueue();
             for (int i = 0; i < DetectedTime.Count; i++)
             {
-                string outputPath = $"{container.TempDir.Name}\\{container.Container[i].ToString()}";
+                string outputPath = container[i].FullName;
 
                 IStream audioStream = Media.AudioStreams.FirstOrDefault();
                 IStream videoStream = Media.VideoStreams.FirstOrDefault();
@@ -77,15 +76,11 @@ namespace SilenceCutter.VideoManipulating
                     .AddParameter($"-ss {DetectedTime[i].Start} -t {DetectedTime[i].Duration}")
                     .SetOutput(outputPath);
                 conversion.OnProgress += OnProgressHandler;
-
+                
                 // wait because it go thought and if we have to convert many video part, it will crush OS
 
                 conversion.Start().Wait();
-                
-                //conversionQueue.Add(conversion);
             }
-            //conversionQueue.Start();
-            Console.WriteLine("SPLITING COMPLETE");
         }
 
         /// <summary>

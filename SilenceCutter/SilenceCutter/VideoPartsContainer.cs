@@ -18,7 +18,7 @@ namespace SilenceCutter.VideoManipulating
         /// contains every video part
         /// </summary>
         public List<VideoPartName> Container { get; private set; }
-        public VideoPartsContainer(string tempDirPath) 
+        public VideoPartsContainer(string tempDirPath)
         {
             Container = new List<VideoPartName>();
             TempDir = new DirectoryInfo(tempDirPath);
@@ -26,9 +26,23 @@ namespace SilenceCutter.VideoManipulating
         /// <summary>
         /// sort list by part number
         /// </summary>
-        public void SortByPartNumber() 
+        public void SortByPartNumber()
         {
             Container.Sort(new VideoPartNameComparer());
+        }
+        /// <summary>
+        /// get video info
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public FileInfo this[int index] 
+        {
+            get 
+            {
+                string path = $"{TempDir.FullName}\\{Container[index]}";
+                FileInfo videoInfo = new FileInfo(path);
+                return videoInfo;
+            }
         }
     }
 }

@@ -20,6 +20,9 @@ using Xabe.FFmpeg.Events;
 
 namespace SilenceCutter.VideoManipulating
 {
+    /// <summary>
+    /// merge video parts, splited by video splitter
+    /// </summary>
     public class VideoMerger
     {
         /// <summary>
@@ -36,7 +39,7 @@ namespace SilenceCutter.VideoManipulating
         /// </summary>
         /// <param name="FilePath">output filepath</param>
         /// <param name="tempDirName">Temp directory path for save all splited part</param>
-        public VideoMerger(string FilePath, string tempDirName = "Temp")
+        public VideoMerger(string FilePath, string tempDirName)
         {
             outputFile = new FileInfo(FilePath);
             TempDir = new DirectoryInfo(tempDirName);
@@ -53,29 +56,6 @@ namespace SilenceCutter.VideoManipulating
         /// <param name="PreferExtension">prefer extension for splited parts of video</param>
         public void MergeVideo(VideoPartsContainer container, ConversionProgressEventHandler OnProgressHandler = null, string PreferExtension = FileExtensions.Mp4)
         {
-            //long SplitedPartNumber = 0;
-            //var fileList = TempDir.GetFiles();
-
-            //for (int i = 0; i < fileList.Length; i++)
-            //{
-            //    // find file
-
-            //    FileInfo inputFile = Array.Find(fileList, file => file.Name.IndexOf(SplitedPartNumber.ToString()) != -1);
-            //    SplitedPartNumber++;
-
-            //    // detect volume value
-
-            //    bool isSilence = inputFile.Name[0].CompareTo('S') == 0 ? true : false;
-
-            //    //IConversion conversion = Conversion.New()
-            //    //    .AddStream(audioStream, videoStream)
-            //    //    .SetOutput(outputPath);
-
-            //    //conversion.OnProgress += OnProgressHandler;
-
-            //    //conversion.Start().Wait();
-            //}
-
             // create and write to file, that places in temp windows directory, all video part names
             
             FileInfo videoPartsList = new FileInfo(Path.ChangeExtension(Path.GetTempFileName(), ".txt"));

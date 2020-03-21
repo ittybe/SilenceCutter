@@ -59,7 +59,7 @@
     <Compile Include="VideoPartName.cs" />
     <Compile Include="VideoPartsNameGenerator.cs" />
     <Compile Include="VideoSpeedManipulator.cs" />
-    <Compile Include="VideoSpliter.cs" />
+    <Compile Include="VideoSplitter.cs" />
     <Compile Include="VolumeDetector.cs" />
   </ItemGroup>
   <ItemGroup>

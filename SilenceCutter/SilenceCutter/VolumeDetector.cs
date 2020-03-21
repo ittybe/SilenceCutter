@@ -84,7 +84,12 @@ namespace SilenceCutter
             /// AudioReader fundamental property for this class
             /// </summary>
             public AudioFileReader AudioReader { get; set; }
-            
+
+            /// <summary>
+            /// DetectedTime 
+            /// </summary>
+            public List<TimeLineVolume> DetectedTime { get; protected set; }
+
             /// <summary>
             /// Buffer's Size in method DetectVolumeLevel()
             /// </summary>
@@ -95,6 +100,7 @@ namespace SilenceCutter
                     return AudioReader.WaveFormat.SampleRate;
                 }
             }
+            
             public VolumeDetector(AudioFileReader audioReader)
             {
                 AudioReader = audioReader;
@@ -105,11 +111,21 @@ namespace SilenceCutter
             }
 
             /// <summary>
-            /// format list of detected timespans by convert time duration to timelines
+            /// Detect volume, detected time will be in DetectedTime
+            /// </summary>
+            /// <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
+            /// <param name="Millisec">we split all audio on millisec blocks and detect this block as silence or sound</param>
+            public void DetectVolume(float amplitudeSilenceThreshold, int Millisec = 1000) 
+            {
+                var tmp = DetectVolumeLevel(amplitudeSilenceThreshold, Millisec);
+                FormatDetectedTimeSpans(tmp);
+            }
+            /// <summary>
+            /// Reformating DetectedTime into start-end TimeSpan list
             /// </summary>
             /// <param name="DetectedTime">result of DetectVolumeLevel()</param>
             /// <returns> squeezed list </returns>
-            public List<TimeLineVolume> FormatDetectedTimeSpans(List<TimeSpanVolume> DetectedTime)
+            private void FormatDetectedTimeSpans(List<TimeSpanVolume> DetectedTime)
             {
                 if (DetectedTime.Count < 1)
                     throw new ArgumentException($"Size of list DetectedTime ({DetectedTime.Count}) less than 1");
@@ -125,7 +141,7 @@ namespace SilenceCutter
                     {
                         if (tmp.Duration > TimeSpan.FromMilliseconds(0))
                             formatedList.Add(tmp);
-
+                        
                         // clear tmp and set span
 
                         tmp = new TimeLineVolume(span.Volume, tmp.End, tmp.End);
@@ -137,10 +153,32 @@ namespace SilenceCutter
                         tmp.End += span.TimeSpan;
                     }
                 }
-                if (tmp.Duration > TimeSpan.FromMilliseconds(0))
+                if (tmp.Duration > TimeSpan.FromMilliseconds(0)) 
+                {
+                    tmp.End = AudioReader.TotalTime; // set to the end because sometimes it Round millisec so we got less time
                     formatedList.Add(tmp);
+                }
                 formatedList.TrimExcess();
-                return formatedList;
+                this.DetectedTime = formatedList;
+            }
+
+            /// <summary>
+            /// if time span is less than the value, this time span will be marged with previous time span
+            /// </summary>
+            /// <param name="millisecMergeThreshold">if time span is less than the value, this time span will be marged with previous time span</param>
+            private void MergeTimeLinesByThreshold(int millisecMergeThreshold) 
+            {
+                TimeSpan span = TimeSpan.FromMilliseconds(millisecMergeThreshold);
+                for (int i = 1; i < DetectedTime.Count; i++)
+                {
+                    if (DetectedTime[i].Duration < span) 
+                    {
+                        var tmp = DetectedTime[i - 1];
+                        tmp.End = DetectedTime[i].End;
+                        DetectedTime[i - 1] = tmp;
+                        
+                    }
+                }
             }
 
             /// <summary>
@@ -151,9 +189,9 @@ namespace SilenceCutter
             /// <returns>
             /// List of Time duration and Volume level ( Sound or Silence )
             /// </returns>
-            public List<TimeSpanVolume> DetectVolumeLevel(
+            private List<TimeSpanVolume> DetectVolumeLevel(
                 float amplitudeSilenceThreshold,
-                int Millisec = 2)
+                int Millisec = 1000)
             {
                 if (amplitudeSilenceThreshold > 1 || amplitudeSilenceThreshold < 0)
                     throw new ArgumentOutOfRangeException($"amplitudeSilenceThreshold ({amplitudeSilenceThreshold}) can't be more than 1 or less than 0");
