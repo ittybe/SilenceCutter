@@ -9,6 +9,14 @@ using SilenceCutter.Detecting;
 
 namespace SilenceCutter.VideoManipulating
 {
+    class VideoPartNameComparer : IComparer<VideoPartName>
+    {
+        public int Compare(VideoPartName x, VideoPartName y)
+        {
+            return x.PartNumber.CompareTo(y.PartNumber);
+        }
+    }
+
     public class VideoPartsContainer
     {
         /// <summary>
@@ -43,7 +51,8 @@ namespace SilenceCutter.VideoManipulating
                 string VolumeLevel = timeSpan.Volume == VolumeValue.Silence ?
                     noiseMark : silenceMark;
 
-                Container.Add(new VideoPartName(VolumeLevel, SplitedPartNumber++, preferExtension));
+                var newName = new VideoPartName(VolumeLevel, SplitedPartNumber++, preferExtension);
+                Container.Add(newName);
             }
         }
         /// <summary>

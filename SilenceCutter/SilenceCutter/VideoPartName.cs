@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SilenceCutter.Detecting;
+using System.Text.RegularExpressions;
+
 namespace SilenceCutter.VideoPartNaming
 {
     /// <summary>
@@ -11,6 +13,10 @@ namespace SilenceCutter.VideoPartNaming
     /// </summary>
     public struct VideoPartName
     {
+        /// <summary>
+        /// RegularExpression for video part name
+        /// </summary>
+        public const string Pattern = @"(\w+)_([0-9]+)\.[0-9A-Za-z]+";
         /// <summary>
         /// Part code in char
         /// </summary>
@@ -32,7 +38,12 @@ namespace SilenceCutter.VideoPartNaming
         {
             get 
             {
-                return $"{PartCode}{PartNumber}{FileExten}";
+                string fullname = $"{PartCode}_{PartNumber}{FileExten}";
+                if (Regex.IsMatch(fullname, Pattern)) 
+                {
+                    return fullname;
+                }
+                throw new ApplicationException($"full name {fullname} is not match this patter {Pattern}");
             }
         }
        
@@ -58,10 +69,20 @@ namespace SilenceCutter.VideoPartNaming
         //{
 
         //}
-        //public static implicit operator VideoPartName(string str)
-        //{
-
-        //}
+        public static implicit operator VideoPartName(string str)
+        {
+            if (Regex.IsMatch(str, Pattern))
+            {
+                string[] nameParts = str.Split('.', '_');
+                // 
+                VideoPartName result = new VideoPartName(nameParts[0], Convert.ToInt64(nameParts[1]), '.' + nameParts[2]);
+                return result;
+            }
+            else 
+            {
+                throw new ApplicationException($"input str {str} is not match this patter {Pattern}");
+            }
+        }
     }
 }
 

@@ -54,7 +54,6 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VideoMerger.cs" />
-    <Compile Include="VideoPartNameComparer.cs" />
     <Compile Include="VideoPartsContainer.cs" />
     <Compile Include="VideoPartName.cs" />
     <Compile Include="VideoPartsNameGenerator.cs" />
