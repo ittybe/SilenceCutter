@@ -25,6 +25,11 @@ namespace SilenceCutter.VideoManipulating
     /// </summary>
     public class VideoMerger
     {
+
+        /// <summary>
+        /// Detected time
+        /// </summary>
+        public List<TimeLineVolume> DetectedTime { get; set; }
         /// <summary>
         /// Temp directory for save all splited part
         /// </summary>
@@ -39,7 +44,8 @@ namespace SilenceCutter.VideoManipulating
         /// </summary>
         /// <param name="FilePath">output filepath</param>
         /// <param name="tempDirName">Temp directory path for save all splited part</param>
-        public VideoMerger(string FilePath, string tempDirName)
+        /// <param name="detectedTime">Detected time</param>
+        public VideoMerger(string FilePath, string tempDirName, List<TimeLineVolume> detectedTime)
         {
             outputFile = new FileInfo(FilePath);
             TempDir = new DirectoryInfo(tempDirName);
@@ -51,13 +57,14 @@ namespace SilenceCutter.VideoManipulating
         /// <summary>
         /// split video on part with only silent or noise
         /// </summary>
-        ///<param name="container">contains video part names</param>
         /// <param name="OnProgressHandler">handler for event OnProgress IConvertion's object </param>
         /// <param name="PreferExtension">prefer extension for splited parts of video</param>
-        public void MergeVideo(VideoPartsContainer container, ConversionProgressEventHandler OnProgressHandler = null, string PreferExtension = FileExtensions.Mp4)
+        public void MergeVideo(string PreferExtension, ConversionProgressEventHandler OnProgressHandler = null)
         {
+            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension);
+
             // create and write to file, that places in temp windows directory, all video part names
-            
+
             FileInfo videoPartsList = new FileInfo(Path.ChangeExtension(Path.GetTempFileName(), ".txt"));
             StreamWriter writer = File.CreateText(videoPartsList.FullName);
             foreach (var videoPart in container.Container) 

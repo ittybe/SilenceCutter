@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using SilenceCutter.VideoPartNaming;
+using SilenceCutter.Detecting;
 
 namespace SilenceCutter.VideoManipulating
 {
@@ -22,6 +23,28 @@ namespace SilenceCutter.VideoManipulating
         {
             Container = new List<VideoPartName>();
             TempDir = new DirectoryInfo(tempDirPath);
+        }
+        /// <summary>
+        /// Generate names depends of detectedTime 
+        /// </summary>
+        /// <param name="DetectedTime">DetectVolumeLevel result</param>
+        /// <param name="preferExtension">Something from FileExtensions (Xabe lib) </param>
+        /// <param name="tempDir">dir for containing all splited video parts</param>
+        /// <returns></returns>
+        public VideoPartsContainer(List<TimeLineVolume> DetectedTime, string tempDir, string preferExtension, string noiseMark = "N", string silenceMark = "S") 
+        {
+            Container = new List<VideoPartName>();
+            TempDir = new DirectoryInfo(tempDir);
+            long SplitedPartNumber = 0;
+
+            foreach (var timeSpan in DetectedTime)
+            {
+                // mark silence as 'S' and noise as 'N'
+                string VolumeLevel = timeSpan.Volume == VolumeValue.Silence ?
+                    noiseMark : silenceMark;
+
+                Container.Add(new VideoPartName(VolumeLevel, SplitedPartNumber++, preferExtension));
+            }
         }
         /// <summary>
         /// sort list by part number

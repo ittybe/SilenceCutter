@@ -13,10 +13,11 @@ using Xabe.FFmpeg;
 using Xabe.FFmpeg.Enums;
 
 using SilenceCutter.Detecting;
-using Xabe.FFmpeg.Model;
+using SilenceCutter.VideoPartNaming;
 
 using System.IO;
 using Xabe.FFmpeg.Events;
+
 
 namespace SilenceCutter.VideoManipulating
 {
@@ -25,64 +26,57 @@ namespace SilenceCutter.VideoManipulating
     /// </summary>
     public class VideoSpeedManipulator
     {
+        /// <summary>
+        /// temp directory for video parts
+        /// </summary>
         public DirectoryInfo TempDir { get; private set; }
-        public VideoSpeedManipulator(DirectoryInfo tempDir) 
+        public List<TimeLineVolume> DetectedTime{ get; protected set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tempDir">temp directory that contains video parts</param>
+        public VideoSpeedManipulator(string tempDir, List<TimeLineVolume> detectedTime) 
         {
-            TempDir = tempDir;
-
+            TempDir = new DirectoryInfo(tempDir);
+            DetectedTime = detectedTime;
         }
 
         /// <summary>
         /// change speed of the video
         /// </summary>
-        /// <param name="videoPath">video that we need to speed up or slow down</param>
-        /// <param name="outputPath">video path as output (you can enter same value as videoPath)</param>
-        /// <param name="changeSpeed">change speed (0.25, 0.5 ...)</param>
-        /// <param name="overwrite">overwrite outputPath, it videoPath and outputPath is the same, this arg have to be true</param>
+        /// <param name="noiseSpeed">noise change speed (0.25, 0.5 ...)</param>
+        /// <param name="PreferExtension">file extension like .mp4, .mkv, ... etc.(use same extension as origin video files to make faster conversion)</param>
+        /// <param name="silenceSpeed">silence change speed (0.25, 0.5 ...)</param>
         /// <param name="OnProgressHandler">Event handler OnProgress interface IConversion</param>
-        public async void ChangeSpeed(
-            FileInfo videoPath, FileInfo outputPath, 
-            double changeSpeed, bool overwrite = true, 
+        public void ChangeSpeed(
+            double silenceSpeed, double noiseSpeed, string PreferExtension,
             ConversionProgressEventHandler OnProgressHandler = null) 
         {
-            // param overwrite -y - overwrite, -n - not overwrite
-            string overwriteParam = overwrite ?
-                "-y" : "-n";
+            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, FileExtensions.Mp4);
+            for (int i = 0; i < DetectedTime.Count; i++) 
+            {
+                double changeSpeed = DetectedTime[i].Volume == VolumeValue.Silence ? silenceSpeed : noiseSpeed;
 
-            // Calc speed value
-            double audioSpeed = 1 * changeSpeed;
-            double videoSpeed = 1 / changeSpeed;
+                // Calc speed value
+                double audioSpeed = 1 * changeSpeed;
+                double videoSpeed = 1 / changeSpeed;
 
-            // format audio double value
-            string audioSpeedStr = audioSpeed.ToString().Replace(',', '.');
-            string videoSpeedStr = videoSpeed.ToString().Replace(',', '.');
+                // format audio double value
+                string audioSpeedStr = audioSpeed.ToString().Replace(',', '.');
+                string videoSpeedStr = videoSpeed.ToString().Replace(',', '.');
 
-            // media streams
-            IMediaInfo mediaInfo = await MediaInfo.Get(videoPath.FullName);
-            IStream videoStream = mediaInfo.VideoStreams.FirstOrDefault();
-            IStream audioStream = mediaInfo.AudioStreams.FirstOrDefault();
-            
-            IConversion conversion = Conversion.New()
-                .AddStream(audioStream, videoStream)
-                .AddParameter($"-filter:a \"atempo = {audioSpeedStr}\"")
-                .AddParameter($"-filter:v \"setpts = {videoSpeedStr} * PTS\"")
-                .AddParameter(overwriteParam)
-                .SetOutput(outputPath.FullName);
+                IConversion conversion = Conversion.New()
+                    .AddParameter(" -y ")
+                    .AddParameter($"-i \"{container[i].FullName}\" ")
+                    .AddParameter($" -af \"atempo = {audioSpeedStr}\", ")       // audio speed op
+                    .AddParameter($" -vf \"setpts = {videoSpeedStr} * PTS\" ") // video speed up
+                    .SetOutput($"\"{container[i].FullName}\""); // overwrite param, yes we agree to over write this part
+                    
+                conversion.OnProgress += OnProgressHandler;
 
-            conversion.OnProgress += OnProgressHandler;
 
-            await conversion.Start();
+                conversion.Start().Wait();
+            }
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-

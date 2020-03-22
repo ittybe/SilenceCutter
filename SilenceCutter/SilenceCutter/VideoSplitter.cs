@@ -41,14 +41,19 @@ namespace SilenceCutter.VideoManipulating
             get { return media; }
             protected set { media = value; }
         }
-
+        /// <summary>
+        /// list of time line with definition of volume level
+        /// </summary>
+        public List<TimeLineVolume> DetectedTime{ get; set; }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="media">IMediaInfo object</param>
         /// <param name="tempDirName">Temp directory name for save all splited part</param>
-        public VideoSplitter(IMediaInfo media, string tempDirName)
+        /// <param name="detectedTime">result of method SilenceCutter.Detecting.VolumeDetector.DetectVolumeLevel()</param>
+        public VideoSplitter(IMediaInfo media, string tempDirName, List<TimeLineVolume> detectedTime)
         {
+            DetectedTime = detectedTime;
             Media = media;
             TempDir = new DirectoryInfo(tempDirName);
             if (!TempDir.Exists)
@@ -58,10 +63,9 @@ namespace SilenceCutter.VideoManipulating
         /// <summary>
         /// split video on part with only silent or noise
         /// </summary>
-        /// <param name="DetectedTime">result of method SilenceCutter.Detecting.VolumeDetector.DetectVolumeLevel()</param>
         /// <param name="OnProgressHandler">handler for event OnProgress IConvertion's object </param>
         /// <param name="PreferExtension">prefer extension for splited parts of video</param>
-        public void SplitVideo(List<TimeLineVolume> DetectedTime, string PreferExtension, ConversionProgressEventHandler OnProgressHandler = null)
+        public void SplitVideo(string PreferExtension, ConversionProgressEventHandler OnProgressHandler = null)
         {
             VideoPartsContainer container = VideoPartNamesGenerator.GenerateNames(DetectedTime, TempDir, PreferExtension);
             for (int i = 0; i < DetectedTime.Count; i++)
