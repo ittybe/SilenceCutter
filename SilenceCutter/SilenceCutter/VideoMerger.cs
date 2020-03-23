@@ -75,7 +75,7 @@ namespace SilenceCutter.VideoManipulating
         /// <param name="PreferExtension">prefer extension for splited parts of video</param>
         public void MergeVideo(string PreferExtension, ConversionProgressEventHandler OnProgressHandler = null)
         {
-            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension);
+            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension, noiseMark, silenceMark);
 
             // create and write to file, that places in temp windows directory, all video part names
 

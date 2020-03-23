@@ -39,7 +39,7 @@ namespace SilenceCutter.VideoManipulating
         /// <param name="preferExtension">Something from FileExtensions (Xabe lib) </param>
         /// <param name="tempDir">dir for containing all splited video parts</param>
         /// <returns></returns>
-        public VideoPartsContainer(List<TimeLineVolume> DetectedTime, string tempDir, string preferExtension, string noiseMark = "N", string silenceMark = "S") 
+        public VideoPartsContainer(List<TimeLineVolume> DetectedTime, string tempDir, string preferExtension, string noiseMark, string silenceMark) 
         {
             Container = new List<VideoPartName>();
             TempDir = new DirectoryInfo(tempDir);

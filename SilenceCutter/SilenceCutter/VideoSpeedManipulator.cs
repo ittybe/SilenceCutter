@@ -82,7 +82,7 @@ namespace SilenceCutter.VideoManipulating
             double silenceSpeed, double noiseSpeed, string PreferExtension, 
             ConversionProgressEventHandler OnProgressHandler = null) 
         {
-            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension);
+            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension, noiseMark, silenceMark);
             VideoPartsContainer containerCopy = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension, NoiseCopyMark, SilenceCopyMark);
             for (int i = 0; i < DetectedTime.Count; i++) 
             {
@@ -95,8 +95,8 @@ namespace SilenceCutter.VideoManipulating
                 // format audio double value
                 string audioSpeedStr = audioSpeed.ToString().Replace(',', '.');
                 string videoSpeedStr = videoSpeed.ToString().Replace(',', '.');
-                Console.WriteLine(container[i].FullName);
-                Console.WriteLine(containerCopy[i].FullName);
+
+                // get media
                 IMediaInfo media = MediaInfo.Get(container[i].FullName).Result;
 
                 IStream audioStream = media.AudioStreams.FirstOrDefault();
