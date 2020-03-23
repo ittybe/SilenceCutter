@@ -24,21 +24,51 @@ namespace SilenceCutter.VideoManipulating
     /// <summary>
     /// Change Speed of the video
     /// </summary>
-    public class VideoSpeedManipulator
+    public class VideoSpeedManipulator : VideoManipulator
     {
+        // TODO rewrite all summary
+        /// <summary>
+        /// noise copy mark for speeded up video part names in temp directory
+        /// </summary>
+        public const string NoiseCopyMark = "NCopy";
+        /// <summary>
+        /// silence copy mark for speeded up video part names in temp directory
+        /// </summary>
+        public const string SilenceCopyMark = "SCopy";
+
         /// <summary>
         /// temp directory for video parts
         /// </summary>
-        public DirectoryInfo TempDir { get; private set; }
-        public List<TimeLineVolume> DetectedTime{ get; protected set; }
+        
+        public DirectoryInfo TempDir
+        {
+            get
+            {
+                return base.tempDir;
+            }
+        }
+        /// <summary>
+        /// list of time line with definition of volume level
+        /// </summary>
+        public List<TimeLineVolume> DetectedTime
+        {
+            get
+            {
+                return detectedTime;
+            }
+            protected set
+            {
+                detectedTime = value;
+            }
+        }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="tempDir">temp directory that contains video parts</param>
-        public VideoSpeedManipulator(string tempDir, List<TimeLineVolume> detectedTime) 
+        public VideoSpeedManipulator(List<TimeLineVolume> detectedTime, string tempDir, string noiseMark, string silenceMark)  : base(detectedTime, tempDir, noiseMark, silenceMark)
         {
-            TempDir = new DirectoryInfo(tempDir);
-            DetectedTime = detectedTime;
+            if (!TempDir.Exists)
+                throw new ArgumentException($"Temp directory {TempDir.FullName} is not exists");
         }
 
         /// <summary>
@@ -49,10 +79,11 @@ namespace SilenceCutter.VideoManipulating
         /// <param name="silenceSpeed">silence change speed (0.25, 0.5 ...)</param>
         /// <param name="OnProgressHandler">Event handler OnProgress interface IConversion</param>
         public void ChangeSpeed(
-            double silenceSpeed, double noiseSpeed, string PreferExtension,
+            double silenceSpeed, double noiseSpeed, string PreferExtension, 
             ConversionProgressEventHandler OnProgressHandler = null) 
         {
-            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, FileExtensions.Mp4);
+            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension);
+            VideoPartsContainer containerCopy = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension, NoiseCopyMark, SilenceCopyMark);
             for (int i = 0; i < DetectedTime.Count; i++) 
             {
                 double changeSpeed = DetectedTime[i].Volume == VolumeValue.Silence ? silenceSpeed : noiseSpeed;
@@ -64,19 +95,24 @@ namespace SilenceCutter.VideoManipulating
                 // format audio double value
                 string audioSpeedStr = audioSpeed.ToString().Replace(',', '.');
                 string videoSpeedStr = videoSpeed.ToString().Replace(',', '.');
+                Console.WriteLine(container[i].FullName);
+                Console.WriteLine(containerCopy[i].FullName);
+                IMediaInfo media = MediaInfo.Get(container[i].FullName).Result;
+
+                IStream audioStream = media.AudioStreams.FirstOrDefault();
+                IStream videoStream = media.VideoStreams.FirstOrDefault();
 
                 IConversion conversion = Conversion.New()
-                    .AddParameter(" -y ")
-                    .AddParameter($"-i \"{container[i].FullName}\" ")
-                    .AddParameter($" -af \"atempo = {audioSpeedStr}\", ")       // audio speed op
-                    .AddParameter($" -vf \"setpts = {videoSpeedStr} * PTS\" ") // video speed up
-                    .SetOutput($"\"{container[i].FullName}\""); // overwrite param, yes we agree to over write this part
+                    .AddStream(audioStream, videoStream)
+                    .AddParameter($"-filter:a \"atempo = {audioSpeedStr}\"")
+                    .AddParameter($"-filter:v \"setpts = {videoSpeedStr} * PTS\"")
+                    .SetOutput(containerCopy[i].FullName);
                     
                 conversion.OnProgress += OnProgressHandler;
 
-
                 conversion.Start().Wait();
             }
+            container.RemoveVideoFiles();
         }
     }
 }

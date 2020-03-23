@@ -23,34 +23,48 @@ namespace SilenceCutter.VideoManipulating
     /// <summary>
     /// merge video parts, splited by video splitter
     /// </summary>
-    public class VideoMerger
+    public class VideoMerger : VideoManipulator
     {
-
         /// <summary>
-        /// Detected time
+        /// temp directory for video parts
         /// </summary>
-        public List<TimeLineVolume> DetectedTime { get; set; }
+        public DirectoryInfo TempDir
+        {
+            get
+            {
+                return base.tempDir;
+            }
+        }
         /// <summary>
-        /// Temp directory for save all splited part
+        /// list of time line with definition of volume level
         /// </summary>
-        public DirectoryInfo TempDir { get; private set; }
+        public List<TimeLineVolume> DetectedTime
+        {
+            get
+            {
+                return detectedTime;
+            }
+            protected set
+            {
+                detectedTime = value;
+            }
+        }
 
         /// <summary>
         /// output fileInfo
         /// </summary>
-        public FileInfo outputFile { get; set; }
+        public FileInfo OutputPath { get; set; }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="FilePath">output filepath</param>
         /// <param name="tempDirName">Temp directory path for save all splited part</param>
         /// <param name="detectedTime">Detected time</param>
-        public VideoMerger(string FilePath, string tempDirName, List<TimeLineVolume> detectedTime)
+        public VideoMerger(List<TimeLineVolume> detectedTime, string tempDir, string noiseMark, string silenceMark, string outputPath) : base(detectedTime, tempDir, noiseMark, silenceMark)
         {
-            outputFile = new FileInfo(FilePath);
-            TempDir = new DirectoryInfo(tempDirName);
+            OutputPath = new FileInfo(outputPath);
             if (!TempDir.Exists)
-                throw new ArgumentException($"Directory \"{tempDirName}\" doesn't exist!");
+                throw new ArgumentException($"Temp directory {TempDir.FullName} is not exists");
         }
 
 
@@ -79,7 +93,7 @@ namespace SilenceCutter.VideoManipulating
 
             IConversion conversion = Conversion.New()
                 .AddParameter($"-f concat -safe 0 -i \"{videoPartsList.FullName}\" -c copy")
-                .SetOutput(outputFile.FullName);
+                .SetOutput(OutputPath.FullName);
             
             conversion.Start().Wait();
 

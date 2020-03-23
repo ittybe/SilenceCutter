@@ -24,15 +24,20 @@ namespace SilenceCutter.VideoManipulating
     /// <summary>
     /// split video by volume level
     /// </summary>
-    public class VideoSplitter
+    public class VideoSplitter : VideoManipulator
     {
         /// <summary>
         /// Temp directory for save all splited part
         /// </summary>
-        public DirectoryInfo TempDir { get; protected set; }
+        public DirectoryInfo TempDir 
+        {
+            get 
+            {
+                return base.tempDir;
+            }
+        }
 
         private IMediaInfo media;
-
         /// <summary>
         /// Media property
         /// </summary>
@@ -44,20 +49,28 @@ namespace SilenceCutter.VideoManipulating
         /// <summary>
         /// list of time line with definition of volume level
         /// </summary>
-        public List<TimeLineVolume> DetectedTime{ get; set; }
+        public List<TimeLineVolume> DetectedTime 
+        {
+            get 
+            {
+                return detectedTime;
+            }
+            protected set 
+            {
+                detectedTime = value;
+            }
+        }
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="media">IMediaInfo object</param>
-        /// <param name="tempDirName">Temp directory name for save all splited part</param>
+        /// <param name="inputPath">input path to video for split</param>
         /// <param name="detectedTime">result of method SilenceCutter.Detecting.VolumeDetector.DetectVolumeLevel()</param>
-        public VideoSplitter(IMediaInfo media, string tempDirName, List<TimeLineVolume> detectedTime)
+        public VideoSplitter(List<TimeLineVolume> detectedTime, string tempDir, string noiseMark, string silenceMark, string inputPath): base(detectedTime, tempDir, noiseMark, silenceMark) 
         {
             DetectedTime = detectedTime;
-            Media = media;
-            TempDir = new DirectoryInfo(tempDirName);
-            if (!TempDir.Exists)
-                TempDir.Create();
+            Media = MediaInfo.Get(inputPath).Result;
+            if (!this.tempDir.Exists)
+                this.tempDir.Create();
         }
 
         /// <summary>
@@ -67,7 +80,8 @@ namespace SilenceCutter.VideoManipulating
         /// <param name="PreferExtension">prefer extension for splited parts of video</param>
         public void SplitVideo(string PreferExtension, ConversionProgressEventHandler OnProgressHandler = null)
         {
-            VideoPartsContainer container = VideoPartNamesGenerator.GenerateNames(DetectedTime, TempDir, PreferExtension);
+            //VideoPartsContainer container = VideoPartNamesGenerator.GenerateNames(DetectedTime, TempDir, PreferExtension);
+            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension, noiseMark, silenceMark);
             for (int i = 0; i < DetectedTime.Count; i++)
             {
                 string outputPath = container[i].FullName;

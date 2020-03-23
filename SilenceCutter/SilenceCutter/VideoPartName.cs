@@ -69,12 +69,18 @@ namespace SilenceCutter.VideoPartNaming
         //{
 
         //}
-        public static implicit operator VideoPartName(string str)
+        /// <summary>
+        /// convert string to video part name
+        /// </summary>
+        /// <param name="str">input string</param>
+        public static explicit operator VideoPartName(string str)
         {
             if (Regex.IsMatch(str, Pattern))
             {
+                // split str on parts with extension, code part and number 
+
                 string[] nameParts = str.Split('.', '_');
-                // 
+                
                 VideoPartName result = new VideoPartName(nameParts[0], Convert.ToInt64(nameParts[1]), '.' + nameParts[2]);
                 return result;
             }

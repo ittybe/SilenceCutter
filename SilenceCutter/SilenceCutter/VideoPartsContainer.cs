@@ -49,10 +49,32 @@ namespace SilenceCutter.VideoManipulating
             {
                 // mark silence as 'S' and noise as 'N'
                 string VolumeLevel = timeSpan.Volume == VolumeValue.Silence ?
-                    noiseMark : silenceMark;
+                    silenceMark : noiseMark;
 
                 var newName = new VideoPartName(VolumeLevel, SplitedPartNumber++, preferExtension);
                 Container.Add(newName);
+            }
+        }
+
+        /// <summary>
+        /// Create container from temp directory
+        /// </summary>
+        /// <param name="videoFiles">video file from temp directory</param>
+        /// <param name="tempDir">temp dir from where we create container</param>
+        public VideoPartsContainer(FileInfo[] videoFiles, string tempDir) 
+        {
+            Container = new List<VideoPartName>();
+            TempDir = new DirectoryInfo(tempDir);
+            foreach (var videoFile in videoFiles)
+            {
+                if (!(TempDir == videoFile.Directory)) 
+                {
+                    throw new ArgumentException($"video file {videoFile.FullName} not in temp directory {TempDir.FullName}");
+                }
+            }
+            foreach (var videoFile in videoFiles)
+            {
+                Container.Add((VideoPartName)videoFile.Name);
             }
         }
         /// <summary>
@@ -75,6 +97,17 @@ namespace SilenceCutter.VideoManipulating
                 FileInfo videoInfo = new FileInfo(path);
                 return videoInfo;
             }
+        }
+        /// <summary>
+        /// remove all video files in temp directory
+        /// </summary>
+        public void RemoveVideoFiles() 
+        {
+            for (int i = 0; i < Container.Count; i++)
+            {
+                this[i].Delete();
+            }
+            Container.Clear();
         }
     }
 }

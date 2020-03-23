@@ -126,8 +126,17 @@ namespace SilenceCutter
             public void DetectVolume(float amplitudeSilenceThreshold, int Millisec = 1000, int millisecExtension = 100) 
             {
                 var tmp = DetectVolumeLevel(amplitudeSilenceThreshold, Millisec);
+                
+                // format time lines
+                
                 FormatDetectedTimeSpans(tmp);
-                ExtendNoise(millisecExtension);
+                
+                // delete all close placed time lines with same volume value
+                
+                MergeTimeLines();
+                
+                // then extend noise by decreasing silence duration
+                ExtendNoiseReduceSilence(millisecExtension);
             }
             /// <summary>
             /// Reformating DetectedTime into start-end TimeSpan list
@@ -191,10 +200,38 @@ namespace SilenceCutter
             }
 
             /// <summary>
+            /// Merge close Time lines if volume the same
+            /// </summary>
+            private void MergeTimeLines() 
+            {
+                // save all indexes to delete and then delete those indexes
+
+                TimeLineVolume PreviousTimeLine = DetectedTime[0];
+                for (int i = 1; i < DetectedTime.Count; i++)
+                {
+                    if (PreviousTimeLine.Volume == DetectedTime[i].Volume)
+                    {
+                        // set Previous timeLine.end next timeLine.end
+                        PreviousTimeLine.End = DetectedTime[i].End;
+
+                        // then delete because we merged this time lines
+                        DetectedTime.RemoveAt(i);
+
+                        // we have deleted time line we need to decrease i value
+                        i--;
+                    }
+                    else 
+                    {
+                        PreviousTimeLine = DetectedTime[i];
+                    }
+                }
+            }
+
+            /// <summary>
             /// extend each noise time span on paticular number
             /// </summary>
             /// <param name="millisecExtension">value for extend noise parts</param>
-            private void ExtendNoise(int millisecExtension) 
+            private void ExtendNoiseReduceSilence(int millisecExtension) 
             {
                 TimeSpan millisec = TimeSpan.FromMilliseconds(millisecExtension);
                 
