@@ -123,20 +123,33 @@ namespace SilenceCutter
             /// <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
             /// <param name="Millisec">we split all audio on millisec blocks and detect this block as silence or sound</param>
             /// <param name="millisecExtension">value for extend noise parts</param>
-            public void DetectVolume(float amplitudeSilenceThreshold, int Millisec = 1000, int millisecExtension = 100) 
+            public void DetectVolume(float amplitudeSilenceThreshold, int Millisec, int millisecExtension) 
             {
                 var tmp = DetectVolumeLevel(amplitudeSilenceThreshold, Millisec);
                 
                 // format time lines
                 
                 FormatDetectedTimeSpans(tmp);
-                
+                foreach (var item in tmp)
+                {
+                    Console.WriteLine(item);
+                }
                 // delete all close placed time lines with same volume value
-                
+                Console.WriteLine();
                 MergeTimeLines();
                 
+                foreach (var item in DetectedTime)
+                {
+                    Console.WriteLine(item);
+                }
+                Console.WriteLine();
+
                 // then extend noise by decreasing silence duration
                 ExtendNoiseReduceSilence(millisecExtension);
+                foreach (var item in DetectedTime)
+                {
+                    Console.WriteLine(item);
+                }
             }
             /// <summary>
             /// Reformating DetectedTime into start-end TimeSpan list
@@ -455,13 +468,13 @@ namespace SilenceCutter
             /// <returns>millisec</returns>
             public int SamplesBlockToMillisec(int SamplesBlock)
             {
-                int Millisec = SamplesBlock / AudioReader.WaveFormat.SampleRate * 1000;
+                double Millisec = (double)SamplesBlock / AudioReader.WaveFormat.SampleRate * 1000;
 
                 // sterio have 2 chanals, if we dont multi that, amount time of audio will be 2 times more than origin
 
                 Millisec /= AudioReader.WaveFormat.Channels;
 
-                return Millisec;
+                return (int)Math.Round(Millisec, 0);
             }
 
             

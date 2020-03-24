@@ -37,6 +37,8 @@ namespace SilenceCutter.VideoManipulating
             }
         }
 
+        public string InputPath { get; set; }
+        
         private IMediaInfo media;
         /// <summary>
         /// Media property
@@ -69,10 +71,11 @@ namespace SilenceCutter.VideoManipulating
         {
             DetectedTime = detectedTime;
             Media = MediaInfo.Get(inputPath).Result;
+            InputPath = inputPath;    
             if (!this.tempDir.Exists)
                 this.tempDir.Create();
         }
-
+        protected string ReceivedDataFromFfmpeg { get; set; }
         /// <summary>
         /// split video on part with only silent or noise
         /// </summary>
@@ -86,19 +89,20 @@ namespace SilenceCutter.VideoManipulating
             {
                 string outputPath = container[i].FullName;
 
-                IStream audioStream = Media.AudioStreams.FirstOrDefault();
-                IStream videoStream = Media.VideoStreams.FirstOrDefault();
+                // split video
 
-                IConversion conversion = Conversion.New()
-                    .AddStream(audioStream, videoStream)
-                    .AddParameter($"-ss {DetectedTime[i].Start} -t {DetectedTime[i].Duration}")
-                    .SetOutput(outputPath);
+                IConversion conversion = Conversion.Split(InputPath, outputPath, DetectedTime[i].Start, DetectedTime[i].Duration);
+
                 conversion.OnProgress += OnProgressHandler;
-                
-                // wait because it go thought and if we have to convert many video part, it will crush OS
 
+                // wait for finishing of conversion
                 conversion.Start().Wait();
             }
+        }
+
+        private void ConversionArg_OnDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
+        {
+            ReceivedDataFromFfmpeg = e.Data;
         }
 
         /// <summary>
