@@ -75,15 +75,15 @@ namespace SilenceCutter.VideoManipulating
         /// change speed of the video
         /// </summary>
         /// <param name="noiseSpeed">noise change speed (0.25, 0.5 ...)</param>
-        /// <param name="PreferExtension">file extension like .mp4, .mkv, ... etc.(use same extension as origin video files to make faster conversion)</param>
+        /// <param name="Extension">video part extension in temp directory like .mp4, .mkv, ... etc.(use same extension as origin video files to make faster conversion)</param>
         /// <param name="silenceSpeed">silence change speed (0.25, 0.5 ...)</param>
         /// <param name="OnProgressHandler">Event handler OnProgress interface IConversion</param>
         public void ChangeSpeed(
-            double silenceSpeed, double noiseSpeed, string PreferExtension, 
+            double silenceSpeed, double noiseSpeed, string Extension, 
             ConversionProgressEventHandler OnProgressHandler = null) 
         {
-            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension, noiseMark, silenceMark);
-            VideoPartsContainer containerCopy = new VideoPartsContainer(DetectedTime, TempDir.FullName, PreferExtension, NoiseCopyMark, SilenceCopyMark);
+            VideoPartsContainer container = new VideoPartsContainer(DetectedTime, TempDir.FullName, Extension, noiseMark, silenceMark);
+            VideoPartsContainer containerCopy = new VideoPartsContainer(DetectedTime, TempDir.FullName, Extension, NoiseCopyMark, SilenceCopyMark);
             for (int i = 0; i < DetectedTime.Count; i++) 
             {
                 double changeSpeed = DetectedTime[i].Volume == VolumeValue.Silence ? silenceSpeed : noiseSpeed;
