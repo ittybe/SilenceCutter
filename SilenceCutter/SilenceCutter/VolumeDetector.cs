@@ -130,40 +130,17 @@ namespace SilenceCutter
                 var tmp = DetectVolumeLevel(amplitudeSilenceThreshold, Millisec);
                 
                 // format time lines
-                
                 FormatDetectedTimeSpans(tmp);
-                foreach (var item in tmp)
-                {
-                    Console.WriteLine(item);
-                }
+                
                 // delete all close placed time lines with same volume value
-                Console.WriteLine();
                 MergeTimeLines();
                 
-                foreach (var item in DetectedTime)
-                {
-                    Console.WriteLine(item);
-                }
-                Console.WriteLine();
-
                 // then extend noise by decreasing silence duration
                 ExtendNoiseReduceSilence(millisecExtension);
-                foreach (var item in DetectedTime)
-                {
-                    Console.WriteLine(item);
-                }
-                Console.WriteLine();
-                DeleteEmptyTimeLines();
-                foreach (var item in DetectedTime)
-                {
-                    Console.WriteLine(item);
-                }
+
+                // delete all close placed time lines with same volume value (expansion of noises can remove some silence parts)
                 MergeTimeLines();
-                Console.WriteLine("after merge time lines:");
-                foreach (var item in DetectedTime)
-                {
-                    Console.WriteLine(item);
-                }
+                
             }
             /// <summary>
             /// Reformating DetectedTime into start-end TimeSpan list
