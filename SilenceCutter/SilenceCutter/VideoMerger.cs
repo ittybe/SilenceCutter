@@ -88,13 +88,14 @@ namespace SilenceCutter.VideoManipulating
             }
             writer.Flush();
             writer.Dispose();
-
             // concate all videopart to one video
 
             IConversion conversion = Conversion.New()
                 .AddParameter($"-f concat -safe 0 -i \"{videoPartsList.FullName}\" -c copy")
                 .SetOutput(OutputPath.FullName);
-            
+
+            conversion.OnProgress += OnProgressHandler;
+
             conversion.Start().Wait();
 
             // delete already useless file

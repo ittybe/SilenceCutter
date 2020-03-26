@@ -100,14 +100,16 @@ namespace SilenceCutter
             /// <summary>
             /// Buffer's Size in method DetectVolumeLevel()
             /// </summary>
-            public long BufferSize
-            {
-                get 
-                {
-                    return AudioReader.WaveFormat.SampleRate;
-                }
-            }
-            
+            //public long BufferSize
+            //{
+            //    get 
+            //    {
+            //        return AudioReader.WaveFormat.SampleRate;
+            //    }
+            //}
+
+            public long BufferSize { get; set; }
+
             public VolumeDetector(AudioFileReader audioReader)
             {
                 AudioReader = audioReader;
@@ -146,6 +148,18 @@ namespace SilenceCutter
 
                 // then extend noise by decreasing silence duration
                 ExtendNoiseReduceSilence(millisecExtension);
+                foreach (var item in DetectedTime)
+                {
+                    Console.WriteLine(item);
+                }
+                Console.WriteLine();
+                DeleteEmptyTimeLines();
+                foreach (var item in DetectedTime)
+                {
+                    Console.WriteLine(item);
+                }
+                MergeTimeLines();
+                Console.WriteLine("after merge time lines:");
                 foreach (var item in DetectedTime)
                 {
                     Console.WriteLine(item);
@@ -229,17 +243,39 @@ namespace SilenceCutter
 
                         // then delete because we merged this time lines
                         DetectedTime.RemoveAt(i);
-
+                        
                         // we have deleted time line we need to decrease i value
                         i--;
+
+                        // and we set value to item with longer duration
+                        DetectedTime[i] = PreviousTimeLine;
                     }
                     else 
                     {
+                        DetectedTime[i - 1] = PreviousTimeLine;
                         PreviousTimeLine = DetectedTime[i];
                     }
                 }
             }
 
+            /// <summary>
+            /// delete all time lines where duration is 0
+            /// </summary>
+            private void DeleteEmptyTimeLines() 
+            {
+                for (int i = 0; i < DetectedTime.Count; i++)
+                {
+                    if (DetectedTime[i].Duration == TimeSpan.Zero) 
+                    {
+                        DetectedTime.RemoveAt(i);
+                        
+                        // we deleted item at i index, so we next one shift to i - 1 index
+
+                        i--;
+                    }
+                }
+            }
+            
             /// <summary>
             /// extend each noise time span on paticular number
             /// </summary>
@@ -264,13 +300,13 @@ namespace SilenceCutter
                         // got for case if Duration of time span is less than the value
 
                         TimeSpan localMillisec = millisec;
-                        if (DetectedTime[i].Duration <= millisec)
-                        {
-                            // we just remove time span if duration of it less than value
+                        //if (DetectedTime[i].Duration <= millisec)
+                        //{
+                        //    // we just remove time span if duration of it less than millisec
 
-                            indexesToDelete.Add(i);
-                            localMillisec = DetectedTime[i].Duration;
-                        }
+                        //    indexesToDelete.Add(i);
+                        //    localMillisec = DetectedTime[i].Duration;
+                        //}
                         
                         // end silence span
                         var silence = DetectedTime[i];
@@ -359,6 +395,7 @@ namespace SilenceCutter
                 int blockSamples = MillisecToSamplesBlock(Millisec);
 
                 // buffer
+                BufferSize = MillisecToSamplesBlock(Millisec);
                 float[] amplitudeArray = new float[BufferSize];
 
                 // end of file
