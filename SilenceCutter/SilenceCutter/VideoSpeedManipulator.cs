@@ -74,9 +74,9 @@ namespace SilenceCutter.VideoManipulating
         /// <summary>
         /// change speed of the video
         /// </summary>
-        /// <param name="noiseSpeed">noise change speed (0.25, 0.5 ...)</param>
+        /// <param name="noiseSpeed">noise change speed (0.25, 0.5 ...) WARNING: if you set this param more than ~ 10 (depends of the smallest duration value in list TimeLineVolume), it will corrupt the output final video</param>
         /// <param name="Extension">video part extension in temp directory like .mp4, .mkv, ... etc.(use same extension as origin video files to make faster conversion)</param>
-        /// <param name="silenceSpeed">silence change speed (0.25, 0.5 ...)</param>
+        /// <param name="silenceSpeed">silence change speed (0.25, 0.5 ...) WARNING: if you set this param more than ~ 10 (depends of the smallest duration value in list TimeLineVolume), it will corrupt the output final video</param>
         /// <param name="OnProgressHandler">Event handler OnProgress interface IConversion</param>
         public void ChangeSpeed(
             double silenceSpeed, double noiseSpeed, string Extension, 
@@ -104,6 +104,7 @@ namespace SilenceCutter.VideoManipulating
 
                 IConversion conversion = Conversion.New()
                     .AddStream(audioStream, videoStream)
+                    .AddParameter(" -video_track_timescale 900000 ")
                     .AddParameter($"-filter:a \"atempo = {audioSpeedStr}\"")
                     .AddParameter($"-filter:v \"setpts = {videoSpeedStr} * PTS\"")
                     .SetOutput(containerCopy[i].FullName);

@@ -258,16 +258,12 @@ namespace SilenceCutter
             }
             
             /// <summary>
-            /// extend each noise time span on paticular number
+            /// extend each noise time span on paticular number, WARNING: Can use only if in list have not same volume at next or previous indexes of the value ( use method MergeTimeLine )
             /// </summary>
             /// <param name="millisecExtension">value for extend noise parts</param>
             private void ExtendNoiseReduceSilence(int millisecExtension) 
             {
                 TimeSpan millisec = TimeSpan.FromMilliseconds(millisecExtension);
-                
-                // save all indexes to delete and then delete those indexes
-
-                List<int> indexesToDelete = new List<int>();
                 
                 // for next one
                 TimeSpan tmpNoiseEnd = DetectedTime[0].End;
@@ -281,14 +277,21 @@ namespace SilenceCutter
                         // got for case if Duration of time span is less than the value
 
                         TimeSpan localMillisec = millisec;
-                        //if (DetectedTime[i].Duration <= millisec)
-                        //{
-                        //    // we just remove time span if duration of it less than millisec
+                        if (DetectedTime[i].Duration <= millisec)
+                        {
+                            // we just remove time span if duration of it less than millisec
+                            // set start noise[i] and end noise[i - 2] at same position
+                            tmpNoiseStart = DetectedTime[i].End;
 
-                        //    indexesToDelete.Add(i);
-                        //    localMillisec = DetectedTime[i].Duration;
-                        //}
-                        
+                            tmpNoiseEnd = DetectedTime[i].End;
+
+                            // set start and end of silence at same position, duration = 0;
+                            var tmp = DetectedTime[i];
+                            tmp.Start = DetectedTime[i].End;
+                            DetectedTime[i] = tmp;
+                            continue;
+                        }
+
                         // end silence span
                         var silence = DetectedTime[i];
                         silence.End -= localMillisec;
@@ -337,12 +340,6 @@ namespace SilenceCutter
                             DetectedTime[i - 2] = noise;
                         }
                     }
-                }
-
-                indexesToDelete.Sort();
-                for (int i = indexesToDelete.Count - 1; i >= 0; i--)
-                {
-                    DetectedTime.RemoveAt(i);
                 }
             }
 

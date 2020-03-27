@@ -99,7 +99,6 @@ namespace SilenceCutter.VideoManipulating
             conversion.Start().Wait();
 
             // delete already useless file
-
             videoPartsList.Delete();
         }
     }

@@ -75,7 +75,6 @@ namespace SilenceCutter.VideoManipulating
             if (!this.tempDir.Exists)
                 this.tempDir.Create();
         }
-        protected string ReceivedDataFromFfmpeg { get; set; }
         /// <summary>
         /// split video on part with only silent or noise
         /// </summary>
@@ -99,12 +98,7 @@ namespace SilenceCutter.VideoManipulating
                 conversion.Start().Wait();
             }
         }
-
-        private void ConversionArg_OnDataReceived(object sender, System.Diagnostics.DataReceivedEventArgs e)
-        {
-            ReceivedDataFromFfmpeg = e.Data;
-        }
-
+        
         /// <summary>
         /// Clear temp directory
         /// </summary>
