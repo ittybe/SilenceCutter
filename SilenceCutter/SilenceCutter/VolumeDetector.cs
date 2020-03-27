@@ -138,9 +138,13 @@ namespace SilenceCutter
                 // then extend noise by decreasing silence duration
                 ExtendNoiseReduceSilence(millisecExtension);
 
+                // delete  all empty timeLines
+                DeleteEmptyTimeLines();
+
                 // delete all close placed time lines with same volume value (expansion of noises can remove some silence parts)
                 MergeTimeLines();
-                
+
+               
             }
             /// <summary>
             /// Reformating DetectedTime into start-end TimeSpan list
