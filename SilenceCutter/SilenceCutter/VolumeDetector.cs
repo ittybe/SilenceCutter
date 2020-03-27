@@ -131,7 +131,7 @@ namespace SilenceCutter
                 
                 // format time lines
                 FormatDetectedTimeSpans(tmp);
-                
+
                 // delete all close placed time lines with same volume value
                 MergeTimeLines();
                 
@@ -352,7 +352,7 @@ namespace SilenceCutter
             /// </returns>
             private List<TimeSpanVolume> DetectVolumeLevel(
                 float amplitudeSilenceThreshold,
-                int Millisec = 1000)
+                int Millisec)
             {
                 if (amplitudeSilenceThreshold > 1 || amplitudeSilenceThreshold < 0)
                     throw new ArgumentOutOfRangeException($"amplitudeSilenceThreshold ({amplitudeSilenceThreshold}) can't be more than 1 or less than 0");
@@ -394,16 +394,16 @@ namespace SilenceCutter
 
                     // MAIN ANALYZE
 
-                    for (int i = 0; i < ReadedSamples; i += blockSamples) 
+                    for (int i = 0; i < ReadedSamples; i += blockSamples)
                     {
                         float average = 0;
 
                         // one block can be not completed ( size of block not equals blockSamples )
 
                         int analyzedSamples = 0;
-                        
+
                         // i + j < amplitudeArray.Length  -  out of the range
-                        
+
                         for (int j = 0; j < blockSamples && i + j < amplitudeArray.Length; j++)
                         {
                             // amplitude can be negative
@@ -432,24 +432,30 @@ namespace SilenceCutter
                     // if Remain samples is not 0, that means we need to analyze it separately (last samples is not clear for dividing it on blocks)
 
                     float averageRemain = 0;
-                    for (int i = ReadedSamples; i < ReadedSamples + RemainSamples; i++) 
+                    for (int i = ReadedSamples; i < ReadedSamples + RemainSamples; i++)
                     {
                         float sampleLocal = Math.Abs(amplitudeArray[i]);
                         averageRemain += sampleLocal;
                     }
                     averageRemain /= RemainSamples;
 
-                    // DETECT Is Silence
+                    // check if Time span is not empty
 
-                    bool isSilence = averageRemain < amplitudeSilenceThreshold ? true : false;
-                    VolumeValue volume = isSilence ?
-                        VolumeValue.Silence :
-                        VolumeValue.Noise;
+                    TimeSpan remainTimeSpan = TimeSpan.FromMilliseconds(SamplesBlockToMillisec(RemainSamples));
+                    if (remainTimeSpan > TimeSpan.Zero) 
+                    {
+                        // DETECT Is Silence
 
-                    // add timespan to list
-                    TimeSpan RemainTimeSpan = TimeSpan.FromMilliseconds(SamplesBlockToMillisec(RemainSamples));
-                    TimeSpanVolume span = new TimeSpanVolume(volume, RemainTimeSpan);
-                    TimeSpanVolumes.Add(span);
+                        bool isSilence = averageRemain < amplitudeSilenceThreshold ? true : false;
+                        VolumeValue volume = isSilence ?
+                            VolumeValue.Silence :
+                            VolumeValue.Noise;
+
+                        // add timespan to list
+                        TimeSpanVolume span = new TimeSpanVolume(volume, remainTimeSpan);
+                        TimeSpanVolumes.Add(span);
+                    }
+                    
                 }
 
                 AudioReader.Position = oldPosition;
