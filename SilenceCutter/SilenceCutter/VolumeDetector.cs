@@ -287,7 +287,7 @@ namespace SilenceCutter
 
                             // set start and end of silence at same position, duration = 0;
                             var tmp = DetectedTime[i];
-                            tmp.Start = DetectedTime[i].End;
+                            tmp.Start = tmp.End;
                             DetectedTime[i] = tmp;
                             continue;
                         }
