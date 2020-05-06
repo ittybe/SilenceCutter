@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SilenceCutter", "SilenceCutter\SilenceCutter.csproj", "{5D371E97-6D61-40CC-97BA-133552C2494B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SilenceCutter", "SilenceCutter\SilenceCutter.csproj", "{A07E24A4-EF0A-48AA-A865-AFC7175737E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5D371E97-6D61-40CC-97BA-133552C2494B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D371E97-6D61-40CC-97BA-133552C2494B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D371E97-6D61-40CC-97BA-133552C2494B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5D371E97-6D61-40CC-97BA-133552C2494B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A07E24A4-EF0A-48AA-A865-AFC7175737E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A07E24A4-EF0A-48AA-A865-AFC7175737E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A07E24A4-EF0A-48AA-A865-AFC7175737E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A07E24A4-EF0A-48AA-A865-AFC7175737E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {033D7973-8376-48D2-A4A9-E3BDC617DF91}
+		SolutionGuid = {995D650B-C951-4745-90F2-9544CEA40A77}
 	EndGlobalSection
 EndGlobal
