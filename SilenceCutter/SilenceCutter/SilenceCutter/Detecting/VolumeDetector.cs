@@ -50,7 +50,8 @@ namespace SilenceCutter.Detecting
         /// <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
         /// <param name="Millisec">we split all audio on millisec blocks and detect this block as silence or sound</param>
         /// <param name="millisecExtension">value for extend noise parts</param>
-        public void DetectVolume(float amplitudeSilenceThreshold, int Millisec, int millisecExtension)
+        /// <returns>list of time spans</returns>
+        public List<TimeLineVolume> DetectVolume(float amplitudeSilenceThreshold, int Millisec, int millisecExtension)
         {
             var tmp = DetectVolumeLevel(amplitudeSilenceThreshold, Millisec);
 
@@ -69,8 +70,10 @@ namespace SilenceCutter.Detecting
             // delete all close placed time lines with same volume value (expansion of noises can remove some silence parts)
             MergeTimeLines();
 
-
+            return DetectedTime;
         }
+
+
         /// <summary>
         /// Reformating DetectedTime into start-end TimeSpan list
         /// </summary>
@@ -111,25 +114,6 @@ namespace SilenceCutter.Detecting
             }
             formatedList.TrimExcess();
             this.DetectedTime = formatedList;
-        }
-
-        /// <summary>
-        /// if time span is less than the value, this time span will be marged with previous time span
-        /// </summary>
-        /// <param name="millisecMergeThreshold">if time span is less than the value, this time span will be marged with previous time span</param>
-        private void MergeTimeLinesByThreshold(int millisecMergeThreshold)
-        {
-            TimeSpan span = TimeSpan.FromMilliseconds(millisecMergeThreshold);
-            for (int i = 1; i < DetectedTime.Count; i++)
-            {
-                if (DetectedTime[i].Duration < span)
-                {
-                    var tmp = DetectedTime[i - 1];
-                    tmp.End = DetectedTime[i].End;
-                    DetectedTime[i - 1] = tmp;
-
-                }
-            }
         }
 
         /// <summary>
