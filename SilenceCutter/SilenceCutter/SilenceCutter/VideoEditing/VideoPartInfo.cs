@@ -19,7 +19,7 @@ namespace SilenceCutter.VideoEditing
         /// 4. w+ is extension 
         /// "_" is separator
         /// </summary>
-        const string PATTERN = @"\w+_\w+_\d+\.\w+";
+        const string PATTERN = @"\w*_\w+_\d+\.\w+";
         
         /// <summary>
         /// silence mark 

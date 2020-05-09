@@ -171,5 +171,69 @@
             class for naming splitted video parts
             </summary>
         </member>
+        <member name="F:SilenceCutter.VideoEditing.VideoPartInfo.PATTERN">
+            <summary>
+            regex pattern 
+            1. w+ is name 
+            2. w+ is Mark Silence or Noise
+            3. d+ is number of part 
+            4. w+ is extension 
+            "_" is separator
+            </summary>
+        </member>
+        <member name="F:SilenceCutter.VideoEditing.VideoPartInfo.SILENCE_MARK">
+            <summary>
+            silence mark 
+            </summary>
+        </member>
+        <member name="F:SilenceCutter.VideoEditing.VideoPartInfo.NOISE_MARK">
+            <summary>
+            noise mark
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.FileExtension">
+            <summary>
+            file extension
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.Mark">
+            <summary>
+            noise or silence mark
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.Number">
+            <summary>
+            number of video part
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.Name">
+            <summary>
+            Name of video part file 
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.FullName">
+            <summary>
+            merged name from propeties of this instance
+            </summary>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.VideoPartInfo.FromString(System.String)">
+            <summary>
+            get VideoPartInfo instance from string name
+            </summary>
+            <param name="name">video name</param>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.VideoPartInfo.FromStringToVideoPartInfo(System.String)">
+            <summary>
+            from string to VideoPartInfo
+            </summary>
+            <param name="name">video file name</param>
+            <returns>instance</returns>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.VideoPartInfo.ToString">
+            <summary>
+            
+            </summary>
+            <returns>FullName prop</returns>
+        </member>
     </members>
 </doc>
