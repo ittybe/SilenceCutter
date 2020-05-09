@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,6 +6,11 @@
     <Authors>ittybe</Authors>
     <Description>Tool for editing audio or video files, can change speed of silence and noise parts of media files. Uses ffmpeg.</Description>
     <RepositoryUrl>https://github.com/ittybe/SilenceCutter</RepositoryUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DocumentationFile>C:\Users\Lenovo\source\repos\SilenceCutter\SilenceCutter\SilenceCutter\SilenceCutter\SilenceCutter.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

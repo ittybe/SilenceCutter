@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SilenceCutter</name>
+    </assembly>
+    <members>
+        <member name="T:SilenceCutter.Detecting.TimeLineVolume">
+            <summary>
+            Time line, have properties start, end, volumeLevel, duration
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.Detecting.TimeLineVolume.Start">
+            <summary>
+            begin
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.Detecting.TimeLineVolume.End">
+            <summary>
+            end
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.Detecting.TimeLineVolume.Duration">
+            <summary>
+            Duration of timeline
+            </summary>
+        </member>
+        <member name="M:SilenceCutter.Detecting.TimeLineVolume.#ctor(SilenceCutter.Detecting.VolumeValue,System.TimeSpan,System.TimeSpan)">
+            <summary>
+            
+            </summary>
+            <param name="volume">Volume level</param>
+            <param name="_start">begin of time line</param>
+            <param name="_end">end of time line</param>
+        </member>
+        <member name="M:SilenceCutter.Detecting.TimeLineVolume.ToString">
+            <summary>
+            to string format
+            </summary>
+            <returns>string format</returns>
+        </member>
+        <member name="T:SilenceCutter.Detecting.VolumeValue">
+            <summary>
+            Volume value like Silence or Noise
+            </summary>
+        </member>
+        <member name="F:SilenceCutter.Detecting.VolumeValue.Silence">
+            <summary>
+            Silence mark
+            </summary>
+        </member>
+        <member name="F:SilenceCutter.Detecting.VolumeValue.Noise">
+            <summary>
+            Noise mark
+            </summary>
+        </member>
+        <member name="T:SilenceCutter.Detecting.TimeSpanVolume">
+            <summary>
+            struct for VolumeDetector
+            </summary>
+        </member>
+        <member name="T:SilenceCutter.Detecting.VolumeDetector">
+            <summary>
+            Detect audio volume
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.Detecting.VolumeDetector.AudioReader">
+            <summary>
+            AudioReader fundamental property for this class
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.Detecting.VolumeDetector.DetectedTime">
+            <summary>
+            DetectedTime 
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.Detecting.VolumeDetector.BufferSize">
+            <summary>
+            Buffer's Size in method DetectVolumeLevel()
+            </summary>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.DetectVolume(System.Single,System.Int32,System.Int32)">
+            <summary>
+            Detect volume, detected time will be in DetectedTime
+            </summary>
+            <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
+            <param name="Millisec">we split all audio on millisec blocks and detect this block as silence or sound</param>
+            <param name="millisecExtension">value for extend noise parts</param>
+            <returns>list of time spans</returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.FormatDetectedTimeSpans(System.Collections.Generic.List{SilenceCutter.Detecting.TimeSpanVolume})">
+            <summary>
+            Reformating DetectedTime into start-end TimeSpan list
+            </summary>
+            <param name="DetectedTime">result of DetectVolumeLevel()</param>
+            <returns> squeezed list </returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.MergeTimeLines">
+            <summary>
+            Merge close Time lines if volume the same
+            </summary>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.DeleteEmptyTimeLines">
+            <summary>
+            delete all time lines where duration is 0
+            </summary>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.ExtendNoiseReduceSilence(System.Int32)">
+            <summary>
+            extend each noise time span on paticular number, WARNING: Can use only if in list have not same volume at next or previous indexes of the value ( use method MergeTimeLine )
+            </summary>
+            <param name="millisecExtension">value for extend noise parts</param>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.DetectVolumeLevel(System.Single,System.Int32)">
+            <summary>
+            detect volume level in audio file
+            </summary>
+            <param name="amplitudeSilenceThreshold">amplitude Threshold ( between 1 and 0 )</param>
+            <param name="Millisec">we split all audio on millisec blocks and detect this block as silence or sound</param>
+            <returns>
+            List of Time duration and Volume level ( Sound or Silence )
+            </returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.MillisecToSamplesBlock(System.Int32)">
+            <summary>
+            convert millisec to samples
+            </summary>
+            <param name="Millisec">millisec</param>
+            <returns>block of samples</returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.SamplesBlockToMillisec(System.Int32)">
+            <summary>
+            convert samples to millisec
+            </summary>
+            <param name="SamplesBlock">number of samples</param>
+            <returns>millisec</returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.GetRecommendedMillisec">
+            <summary>
+            Get recommended millisec for method DetectVolumeLevel
+            </summary>
+            <returns>
+            millisec (less than 1000) that you should put in "DetectVolumeLevel" method
+            </returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.GetMaxAmplitude">
+            <summary>
+            Get max amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+            </summary>
+            <returns>Max Amplitude</returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.GetMaxAbsAmplitude">
+            <summary>
+            Get max abs amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+            </summary>
+            <returns>Max Abs Amplitude</returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.GetMinAmplitude">
+            <summary>
+            Get min amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+            </summary>
+            <returns>Min Amplitude</returns>
+        </member>
+        <member name="M:SilenceCutter.Detecting.VolumeDetector.GetMinAbsAmplitude">
+            <summary>
+            Get min abs amplitude ( for right choose silence threshold for method DetectSilenceLevel() )
+            </summary>
+            <returns>Min Abs Amplitude</returns>
+        </member>
+        <member name="T:SilenceCutter.VideoEditing.VideoPartInfo">
+            <summary>
+            class for naming splitted video parts
+            </summary>
+        </member>
+    </members>
+</doc>
