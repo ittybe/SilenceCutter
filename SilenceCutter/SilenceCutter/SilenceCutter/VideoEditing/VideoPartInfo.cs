@@ -36,6 +36,10 @@ namespace SilenceCutter.VideoEditing
         public const string NOISE_MARK = "NOISE";
 
         /// <summary>
+        /// Directory where it placed
+        /// </summary>
+        public DirectoryInfo Dir { get; set; }
+        /// <summary>
         /// file extension
         /// </summary>
         public string FileExtension { get; set; }
@@ -61,16 +65,31 @@ namespace SilenceCutter.VideoEditing
         public string Name { get; set; }
 
         /// <summary>
-        /// merged name from propeties of this instance
+        /// merged name from propeties of this instance except Dir
         /// </summary>
         public string FullName 
         {
             get 
             {
                 string mark = IsNoise ? NOISE_MARK : SILENCE_MARK;
-                return $"{Name}_{mark}_{Number}{FileExtension}";
+                return $"{Name}{SEPARATOR}{mark}{SEPARATOR}{Number}{FileExtension}";
             }
         }
+
+        /// <summary>
+        /// merged name from propeties of this instance
+        /// </summary>
+        public string FullNamePath
+        {
+            get
+            {
+                char osSep = Path.DirectorySeparatorChar;
+                string mark = IsNoise ? NOISE_MARK : SILENCE_MARK;
+
+                return $"{Dir.FullName}{osSep}{Name}{SEPARATOR}{mark}{SEPARATOR}{Number}{FileExtension}";
+            }
+        }
+
 
         /// <summary>
         /// get VideoPartInfo instance from string name
