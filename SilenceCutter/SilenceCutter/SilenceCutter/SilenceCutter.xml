@@ -166,6 +166,58 @@
             </summary>
             <returns>Min Abs Amplitude</returns>
         </member>
+        <member name="T:SilenceCutter.VideoEditing.Arguments.SplitArgument">
+            <summary>
+            Split argument
+            </summary>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.TempDirectory.GetTempDir">
+            <summary>
+            
+            </summary>
+            <returns>temp directory in sys temp dir, that not exists</returns>
+        </member>
+        <member name="T:SilenceCutter.VideoEditing.VideoEditor">
+            <summary>
+            video editor, that split, change speed, merge media files 
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.VideoEditing.VideoEditor.Source">
+            <summary>
+            Media file
+            </summary>
+        </member>
+        <member name="P:SilenceCutter.VideoEditing.VideoEditor.Dir">
+            <summary>
+            directory where place all video part
+            </summary>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.VideoEditor.Split(SilenceCutter.Detecting.TimeLineVolume[])">
+            <summary>
+            split video by time lines in Dir
+            </summary>
+            <param name="timeLines">time lines</param>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.VideoEditor.Cut(SilenceCutter.Detecting.TimeLineVolume[],SilenceCutter.Detecting.VolumeValue)">
+            <summary>
+            do same thing as method Split, but create in dir only parts where VolumeValue equels argument
+            </summary>
+            <param name="timeLines">time lines</param>
+            <param name="value">value that stays</param>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.VideoEditor.Merge(System.String)">
+            <summary>
+            merge all parts in Dir 
+            </summary>
+            <param name="outputPath">output</param>
+        </member>
+        <member name="M:SilenceCutter.VideoEditing.VideoEditor.ChangeSpeed(System.Decimal,System.Decimal)">
+            <summary>
+            change speed of parts in Dir
+            </summary>
+            <param name="noiseSpeed">noise speed</param>
+            <param name="silenceSpeed">silence speed</param>
+        </member>
         <member name="T:SilenceCutter.VideoEditing.VideoPartInfo">
             <summary>
             class for naming splitted video parts
@@ -196,9 +248,9 @@
             file extension
             </summary>
         </member>
-        <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.Mark">
+        <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.IsNoise">
             <summary>
-            noise or silence mark
+            is noise marks video part as noise or silence
             </summary>
         </member>
         <member name="P:SilenceCutter.VideoEditing.VideoPartInfo.Number">

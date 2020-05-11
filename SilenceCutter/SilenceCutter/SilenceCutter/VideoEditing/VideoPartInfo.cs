@@ -12,6 +12,10 @@ namespace SilenceCutter.VideoEditing
     public class VideoPartInfo
     {
         /// <summary>
+        /// separator
+        /// </summary>
+        public const string SEPARATOR = "_";
+        /// <summary>
         /// regex pattern 
         /// 1. w+ is name 
         /// 2. w+ is Mark Silence or Noise
@@ -19,17 +23,17 @@ namespace SilenceCutter.VideoEditing
         /// 4. w+ is extension 
         /// "_" is separator
         /// </summary>
-        const string PATTERN = @"\w*_\w+_\d+\.\w+";
+        public readonly string PATTERN = $@"\w*{SEPARATOR}\w+{SEPARATOR}\d+\.\w+";
         
         /// <summary>
         /// silence mark 
         /// </summary>
-        const string SILENCE_MARK = "SLNCE";
+        public const string SILENCE_MARK = "SLNCE";
 
         /// <summary>
         /// noise mark
         /// </summary>
-        const string NOISE_MARK = "NOISE";
+        public const string NOISE_MARK = "NOISE";
 
         /// <summary>
         /// file extension
@@ -37,9 +41,14 @@ namespace SilenceCutter.VideoEditing
         public string FileExtension { get; set; }
 
         /// <summary>
-        /// noise or silence mark
+        /// is noise marks video part as noise or silence
         /// </summary>
-        public string Mark { get; set; }
+        public bool IsNoise { get; set; }
+
+        ///// <summary>
+        ///// noise or silence mark
+        ///// </summary>
+        //public string Mark { get; set; }
 
         /// <summary>
         /// number of video part
@@ -58,7 +67,8 @@ namespace SilenceCutter.VideoEditing
         {
             get 
             {
-                return $"{Name}_{Mark}_{Number}{FileExtension}";
+                string mark = IsNoise ? NOISE_MARK : SILENCE_MARK;
+                return $"{Name}_{mark}_{Number}{FileExtension}";
             }
         }
 
@@ -76,7 +86,14 @@ namespace SilenceCutter.VideoEditing
             // point in extension
             FileExtension = $".{props[props.Length - 1]}";
             Number = int.Parse(props[props.Length - 2]);
-            Mark = props[props.Length - 3];
+
+            // detecting mark
+            string mark = props[props.Length - 3];
+            if (mark == NOISE_MARK)
+                IsNoise = true;
+            else
+                IsNoise = false;
+            //Mark = props[props.Length - 3];
             
             if (props.Length - 4 == 0)
                 Name = props[props.Length - 4];
@@ -89,7 +106,7 @@ namespace SilenceCutter.VideoEditing
         /// </summary>
         /// <param name="name">video file name</param>
         /// <returns>instance</returns>
-        static VideoPartInfo FromStringToVideoPartInfo(string name) 
+        public static VideoPartInfo FromStringToVideoPartInfo(string name) 
         {
             VideoPartInfo partInfo = new VideoPartInfo();
             partInfo.FromString(name);

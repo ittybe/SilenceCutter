@@ -25,30 +25,50 @@ namespace SilenceCutter.VideoEditing
         /// </summary>
         public DirectoryInfo Dir { get; set; }
 
+        protected string SourceExtension
+        {
+            get 
+            {
+                return Path.GetExtension(Source.FullName);
+            }
+        }
+
         /// <summary>
         /// split video by time lines in Dir
         /// </summary>
         /// <param name="timeLines">time lines</param>
         public void Split(TimeLineVolume[] timeLines) 
         {
+            char sep = Path.DirectorySeparatorChar;
             FFMpeg ffmpeg = new FFMpeg();
+
             for (int i = 0; i < timeLines.Length; i++)
             {
                 ArgumentContainer container = new ArgumentContainer();
+                // input arg
+                container.Add(new InputArgument(Source));
+
+                // split arg
                 container.Add(new SplitArgument(timeLines[i]));
-                VideoPartInfo partInfo = new VideoPartInfo();
-
-                container.Add(new OutputArgument());
-                ffmpeg.Convert(container);
                 
+                // output path
+                VideoPartInfo partInfo = new VideoPartInfo() 
+                {
+                    IsNoise = timeLines[i].Volume == VolumeValue.Noise ? true: false,
+                    Name = "videoPart",
+                    FileExtension = SourceExtension,
+                    Number = i,
+                };
+                string outputPath = $"{Dir.FullName}{sep}{partInfo.FullName}";
+                container.Add(new OutputArgument(outputPath));
 
+                // convert 
+                ffmpeg.Convert(container);
             }
-
-
         }
 
         /// <summary>
-        /// do same thing as method Split, but create in dir only parts where VolumeValue equels argument
+        /// do same thing as method Split, but create in dir only parts where VolumeValue equals argument
         /// </summary>
         /// <param name="timeLines">time lines</param>
         /// <param name="value">value that stays</param>
@@ -76,5 +96,20 @@ namespace SilenceCutter.VideoEditing
 
         }
 
+        /// <summary>
+        /// get video parts info from directory
+        /// </summary>
+        /// <param name="dir">dir</param>
+        /// <returns></returns>
+        static VideoPartInfo[] GetVideoPartsInfo(DirectoryInfo dir) 
+        {
+            List<VideoPartInfo> partsInfo = new List<VideoPartInfo>();
+            foreach (var mediaFile in dir.GetFiles())
+            {
+                VideoPartInfo partInfo = VideoPartInfo.FromStringToVideoPartInfo(mediaFile.Name);
+                partsInfo.Add(partInfo);
+            }
+            return partsInfo.ToArray();
+        }
     }
 }
